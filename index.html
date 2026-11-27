@@ -18,12 +18,13 @@
     <span class="sub">Debian 12 · i386 · v86</span>
   </div>
   <nav class="actions">
-    <button id="btn-start" class="primary">启动</button>
-    <button id="btn-pause" disabled>暂停</button>
-    <button id="btn-reset" disabled>重启</button>
-    <button id="btn-full" disabled>全屏</button>
-    <button id="btn-theme" class="icon" title="切换亮/暗主题">☾</button>
-    <button id="btn-panel">控制台</button>
+    <button id="btn-start" class="primary" data-i18n="start">启动</button>
+    <button id="btn-pause" disabled data-i18n="pause">暂停</button>
+    <button id="btn-reset" disabled data-i18n="reset">重启</button>
+    <button id="btn-full" disabled data-i18n="full">全屏</button>
+    <button id="btn-lang" class="icon" title="Language">EN</button>
+    <button id="btn-theme" class="icon" title="Theme">☾</button>
+    <button id="btn-panel" data-i18n="console">控制台</button>
   </nav>
 </header>
 
@@ -34,8 +35,8 @@
       <canvas></canvas>
       <div id="boot-log" class="boot-log hidden">
         <div class="boot-head">
-          <span class="led"></span> ttyS0 · 引导日志
-          <button id="btn-boot-skip" class="mini ghost">跳过</button>
+          <span class="led"></span> <span data-i18n="bootTitle">ttyS0 · 引导日志</span>
+          <button id="btn-boot-skip" class="mini ghost" data-i18n="skip">跳过</button>
         </div>
         <pre id="boot-text"></pre>
       </div>
@@ -51,42 +52,42 @@
       <button class="key" data-key="down">↓</button>
       <button class="key" data-key="right">→</button>
       <form id="type-form" class="typebox">
-        <input id="type-in" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="点这里用手机键盘输入">
+        <input id="type-in" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="点这里用手机键盘输入" data-i18n-ph="typePh">
         <button type="submit" class="key send">⏎</button>
       </form>
     </div>
 
-    <p class="hint">手机上先点输入框打字，回车发送；虚拟终端需要已登录。画面卡住时可到「控制台」看内核输出。</p>
+    <p class="hint" data-i18n="hint">手机上先点输入框打字，回车发送；虚拟终端需要已登录。画面卡住时可到「控制台」看内核输出。</p>
   </section>
 
   <aside id="side" class="side">
     <div class="side-head">
       <div class="tabs">
-        <button class="tab active" data-tab="term">串口</button>
-        <button class="tab" data-tab="net">网络</button>
+        <button class="tab active" data-tab="term" data-i18n="tabSerial">串口</button>
+        <button class="tab" data-tab="net" data-i18n="tabNet">网络</button>
       </div>
-      <button id="btn-close-side" class="mini ghost">收起</button>
+      <button id="btn-close-side" class="mini ghost" data-i18n="collapse">收起</button>
     </div>
 
     <div class="pane" id="pane-term">
       <pre id="serial-out" class="serial"></pre>
       <form id="serial-form" class="serial-input">
         <span>&gt;</span>
-        <input id="serial-in" autocomplete="off" spellcheck="false" placeholder="已登录后在这里发命令">
-        <button type="submit" class="mini">发送</button>
+        <input id="serial-in" autocomplete="off" spellcheck="false" placeholder="已登录后在这里发命令" data-i18n-ph="serialPh">
+        <button type="submit" class="mini" data-i18n="send">发送</button>
       </form>
     </div>
 
     <div class="pane hidden" id="pane-net">
       <div class="netbox">
-        <label for="wisp">网络中继（WISP，WebSocket）</label>
+        <label for="wisp" data-i18n="wispLabel">网络中继（WISP，WebSocket）</label>
         <input id="wisp" spellcheck="false" placeholder="wss://your-relay.example/wisp/">
         <div class="row">
-          <span id="net-state" class="badge">未连接</span>
-          <button id="btn-net" class="mini">重连</button>
-          <button id="btn-clear-disk" class="mini danger">清除磁盘改动</button>
+          <span id="net-state" class="badge" data-i18n="netNone">未连接</span>
+          <button id="btn-net" class="mini" data-i18n="reconnect">重连</button>
+          <button id="btn-clear-disk" class="mini danger" data-i18n="clearDisk">清除磁盘改动</button>
         </div>
-        <p class="note">
+        <p class="note" data-i18n="netNote">
           浏览器不能直接开 TCP 连接，虚拟机里的网络需要通过这个 WISP 中继转发。
           本机运行时用自带的 <code>server.js</code>；用 GitHub Pages 打开时请填写一个公网 WISP 地址。
         </p>
@@ -96,10 +97,10 @@
 </main>
 
 <footer class="statusbar">
-  <span id="status">准备就绪</span>
+  <span id="status" data-i18n="ready">准备就绪</span>
   <span class="spacer"></span>
   <span id="stat-ip" class="hide-sm">内存 256MB</span>
-  <span id="stat-net">网络：未连接</span>
+  <span id="stat-net" data-i18n="netOffline">网络：未连接</span>
 </footer>
 
 <script src="lib/v86.js"></script>

@@ -1,5 +1,7 @@
 # Linux in HTML
 
+[中文](#linux-in-html) · [English](README.en.md)
+
 在浏览器里跑一台**真的 Debian 12 i386 虚拟机**：真的内核、真的 systemd-free sysvinit 用户态、真的磁盘、真的 TCP 网络。
 不是 UI 复原、不是视频回放，也不是只会 echo 的假终端。
 
@@ -81,3 +83,9 @@ images/         vmlinuz、initrd、disk 分块镜像
   `index.html?assets=https://ghproxy.net/https://raw.githubusercontent.com/wdhdc/linux-in-html/gh-pages/images`
   （把 `ghproxy.net` 换成你手头可用的 GitHub 反代/代理站点即可，路径部分保持不变。）
 - WISP 中继是 WebSocket 长连接，Pages 上必须填一个公网可访问的 `wss://…/wisp/`；国内可以用一台小 VPS 跑 `node server.js`，前面套 Nginx 反代并开 TLS。
+
+## 许可证
+
+- 本仓库原创代码（前端、`server.js`、构建脚本）采用 **MIT**，见 `LICENSE`。
+- v86（BSD-2-Clause）、SeaBIOS / SeaVGABIOS（LGPL-3.0）、Debian 内核与 rootfs 二进制（GPL 等）保持各自许可证，作为独立文件分发，属于聚合，**不会把 GPL 传染到本项目代码**。
+- 内核与 rootfs 内保留 `/usr/share/doc/*/copyright`；GPL 二进制的对应源码地址与书面要约写在 `THIRD-PARTY-NOTICES.md`。

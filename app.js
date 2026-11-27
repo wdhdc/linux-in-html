@@ -192,29 +192,29 @@ function createEmulator() {
 
     emulator.add_listener("download-error", (e) => {
         console.error(e);
-        setStatus("镜像下载失败，检查 images/ 是否完整");
+        setStatus(t("downloadFail"));
     });
 
     emulator.add_listener("emulator-ready", () => {
         ready = true;
         el.btnStart.disabled = false;
-        setStatus("虚拟机已就绪，点击“启动”");
+        setStatus(t("starting"));
         attachOverlay(emulator);
     });
 
     emulator.add_listener("emulator-started", () => {
-        setStatus("运行中");
+        setStatus(t("running"));
         el.btnPause.disabled = false;
         el.btnPause.textContent = "暂停";
         el.btnReset.disabled = false;
         el.btnFull.disabled = false;
         el.btnStart.disabled = true;
-        if (config.net_device) setNet("ok", "已配置（WISP）");
+        if (config.net_device) setNet("ok", t("netConfigured"));
         else setNet("", "未配置");
     });
 
     emulator.add_listener("emulator-stopped", () => {
-        setStatus("已暂停");
+        setStatus(t("paused"));
         el.btnPause.textContent = "继续";
         el.btnStart.disabled = true;
         el.btnReset.disabled = false;
@@ -237,7 +237,7 @@ function renderSerial() {
 
 el.btnStart.onclick = () => {
     if (!emulator) createEmulator();
-    setStatus("正在加载镜像（384MB，首次较慢）…");
+    setStatus(t("loading"));
     if (ready) emulator.run();
 };
 
@@ -249,7 +249,7 @@ el.btnPause.onclick = () => {
 
 el.btnReset.onclick = () => {
     if (!emulator) return;
-    serialBuffer += "\n[r] 重启虚拟机…\n";
+    serialBuffer += "\n[r] " + t("resetMsg") + "\n";
     emulator.restart();
 };
 
@@ -279,10 +279,10 @@ el.screen.addEventListener("mousedown", () => el.screen.focus());
 el.btnNet.onclick = () => {
     const relay = wispUrlForV86();
     if (!relay) {
-        setNet("bad", "请填写 WISP 地址");
+        setNet("bad", t("netMissing"));
         return;
     }
-    if (!confirm("重连会在新地址上重新创建虚拟机，当前未保存的进度会丢失，继续？")) return;
+    if (!confirm(t("confirmReload"))) return;
     try { emulator && emulator.destroy && emulator.destroy(); } catch {}
     emulator = null;
     ready = false;
@@ -293,7 +293,7 @@ el.btnNet.onclick = () => {
 };
 
 el.btnClear.onclick = async () => {
-    if (!confirm("清除浏览器里保存的磁盘改动？虚拟机将回到初始镜像状态，需要重新启动。")) return;
+    if (!confirm(t("confirmClear"))) return;
     try {
         const db = await openDB();
         await new Promise((resolve) => {
@@ -314,7 +314,7 @@ window.addEventListener("load", async () => {
     await loadOverlay();
     createEmulator();
     el.btnStart.disabled = false;
-    setStatus(overlay.size ? "已载入磁盘改动，点击“启动”" : "准备就绪，点击“启动”");
+    setStatus(t("readyStart"));
 });
 
 /* ----------------------------- 手机键盘 & 侧栏 ----------------------------- */
@@ -470,3 +470,55 @@ setInterval(() => {
     if (bootVisible && /login:/.test(serialBuffer.slice(-2000))) hideBootLog();
 }, 1500);
 setTimeout(() => { if (bootVisible) hideBootLog(); }, 240000);
+
+/* ----------------------------- 中英文切换 ----------------------------- */
+
+const I18N = {
+    zh: {
+        start: "启动", pause: "暂停", reset: "重启", full: "全屏", console: "控制台",
+        bootTitle: "ttyS0 · 引导日志", skip: "跳过", hint: "手机上先点输入框打字，回车发送；虚拟终端需要已登录。画面卡住时可到「控制台」看内核输出。",
+        tabSerial: "串口", tabNet: "网络", collapse: "收起", send: "发送", reconnect: "重连", clearDisk: "清除磁盘改动",
+        ready: "准备就绪", netNone: "未连接", netOffline: "网络：未连接",
+        wispLabel: "网络中继（WISP，WebSocket）",
+        netNote: "浏览器不能直接开 TCP 连接，虚拟机里的网络需要通过这个 WISP 中继转发。本机运行时用自带的 server.js；用 GitHub Pages 打开时请填写一个公网 WISP 地址。",
+        typePh: "点这里用手机键盘输入", serialPh: "已登录后在这里发命令",
+        readyStart: "准备就绪，点击「启动」", loading: "正在加载镜像（384MB，首次较慢）…",
+        starting: "虚拟机已就绪，点击「启动」", running: "运行中", paused: "已暂停",
+        downloadFail: "镜像下载失败，检查 images/ 是否完整",
+        netConfigured: "已配置（WISP）", netMissing: "请填写 WISP 地址",
+        resetMsg: "重启虚拟机…", confirmReload: "重连会重新创建虚拟机，当前未保存的进度会丢失，继续？",
+        confirmClear: "清除浏览器里保存的磁盘改动？虚拟机将回到初始镜像状态。",
+    },
+    en: {
+        start: "Start", pause: "Pause", reset: "Restart", full: "Fullscreen", console: "Console",
+        bootTitle: "ttyS0 · boot log", skip: "Skip",
+        hint: "Tap the input to type with your phone keyboard. The guest must be logged in; switch to Console for kernel output.",
+        tabSerial: "Serial", tabNet: "Network", collapse: "Close", send: "Send", reconnect: "Reconnect", clearDisk: "Reset disk",
+        ready: "Ready", netNone: "Not connected", netOffline: "Network: offline",
+        wispLabel: "Network relay (WISP over WebSocket)",
+        netNote: "Browsers cannot open raw TCP; guest networking is relayed through a WISP endpoint. Use the bundled server.js locally, or enter a public WISP URL when opening from GitHub Pages.",
+        typePh: "Tap here to type", serialPh: "Send a command after login",
+        readyStart: "Ready — press Start", loading: "Loading image (384 MB, first boot is slow)…",
+        starting: "VM ready — press Start", running: "Running", paused: "Paused",
+        downloadFail: "Image download failed; check images/",
+        netConfigured: "Configured (WISP)", netMissing: "Enter a WISP URL",
+        resetMsg: "Restarting VM…", confirmReload: "Reconnect recreates the VM and drops unsaved progress. Continue?",
+        confirmClear: "Clear saved disk changes and return to the original image?",
+    },
+};
+
+let lang = localStorage.getItem("lih-lang") || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en");
+const t = (k) => (I18N[lang] && I18N[lang][k]) || I18N.zh[k] || k;
+
+const langBtn = document.getElementById("btn-lang");
+
+function applyLang(next) {
+    lang = next;
+    document.documentElement.lang = next === "zh" ? "zh-CN" : "en";
+    langBtn.textContent = next === "zh" ? "EN" : "中文";
+    document.querySelectorAll("[data-i18n]").forEach((n) => { n.textContent = t(n.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-ph]").forEach((n) => { n.placeholder = t(n.dataset.i18nPh); });
+    try { localStorage.setItem("lih-lang", next); } catch {}
+}
+applyLang(lang);
+langBtn.onclick = () => applyLang(lang === "zh" ? "en" : "zh");
