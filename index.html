@@ -2,24 +2,28 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Linux in HTML · Debian 12 浏览器虚拟机</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <header class="topbar">
   <div class="brand">
     <span class="dot"></span>
     <strong>Linux in HTML</strong>
     <span class="sub">Debian 12 · i386 · v86</span>
   </div>
-  <div class="actions">
+  <nav class="actions">
     <button id="btn-start" class="primary">启动</button>
     <button id="btn-pause" disabled>暂停</button>
     <button id="btn-reset" disabled>重启</button>
     <button id="btn-full" disabled>全屏</button>
     <button id="btn-panel">控制台</button>
-  </div>
+  </nav>
 </header>
 
 <main class="workspace">
@@ -28,33 +32,57 @@
       <div class="text-layer"></div>
       <canvas></canvas>
     </div>
-    <div class="screen-hint">点击画面后即可用键盘输入；画面无响应时可切到右侧串口控制台查看内核输出。</div>
+
+    <div class="keybar" id="keybar">
+      <button class="key" data-key="esc">Esc</button>
+      <button class="key" data-key="tab">Tab</button>
+      <button class="key" data-key="ctrl">Ctrl</button>
+      <button class="key" data-key="alt">Alt</button>
+      <button class="key" data-key="left">←</button>
+      <button class="key" data-key="up">↑</button>
+      <button class="key" data-key="down">↓</button>
+      <button class="key" data-key="right">→</button>
+      <form id="type-form" class="typebox">
+        <input id="type-in" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="点这里用手机键盘输入">
+        <button type="submit" class="key send">⏎</button>
+      </form>
+    </div>
+
+    <p class="hint">手机上先点输入框打字，回车发送；虚拟终端需要已登录。画面卡住时可到「控制台」看内核输出。</p>
   </section>
 
   <aside id="side" class="side">
     <div class="side-head">
-      <span>串口控制台 · ttyS0</span>
-      <button id="btn-clear-serial" class="mini">清屏</button>
-    </div>
-    <pre id="serial-out" class="serial"></pre>
-    <form id="serial-form" class="serial-input">
-      <span>&gt;</span>
-      <input id="serial-in" autocomplete="off" spellcheck="false" placeholder="需要 guest 已登录，输入命令后回车">
-      <button type="submit" class="mini">发送</button>
-    </form>
-
-    <div class="netbox">
-      <label for="wisp">网络中继（WISP，WebSocket）</label>
-      <input id="wisp" spellcheck="false">
-      <div class="row">
-        <span id="net-state" class="badge">未连接</span>
-        <button id="btn-net" class="mini">重连</button>
-        <button id="btn-clear-disk" class="mini danger">清除磁盘改动</button>
+      <div class="tabs">
+        <button class="tab active" data-tab="term">串口</button>
+        <button class="tab" data-tab="net">网络</button>
       </div>
-      <p class="note">
-        浏览器不能直接开 TCP 连接，虚拟机里的网络需要通过这个 WISP 中继转发。
-        本机运行时用自带的 <code>server.js</code>；用 GitHub Pages 打开时请在下方填写一个公网 WISP 地址。
-      </p>
+      <button id="btn-close-side" class="mini ghost">收起</button>
+    </div>
+
+    <div class="pane" id="pane-term">
+      <pre id="serial-out" class="serial"></pre>
+      <form id="serial-form" class="serial-input">
+        <span>&gt;</span>
+        <input id="serial-in" autocomplete="off" spellcheck="false" placeholder="已登录后在这里发命令">
+        <button type="submit" class="mini">发送</button>
+      </form>
+    </div>
+
+    <div class="pane hidden" id="pane-net">
+      <div class="netbox">
+        <label for="wisp">网络中继（WISP，WebSocket）</label>
+        <input id="wisp" spellcheck="false" placeholder="wss://your-relay.example/wisp/">
+        <div class="row">
+          <span id="net-state" class="badge">未连接</span>
+          <button id="btn-net" class="mini">重连</button>
+          <button id="btn-clear-disk" class="mini danger">清除磁盘改动</button>
+        </div>
+        <p class="note">
+          浏览器不能直接开 TCP 连接，虚拟机里的网络需要通过这个 WISP 中继转发。
+          本机运行时用自带的 <code>server.js</code>；用 GitHub Pages 打开时请填写一个公网 WISP 地址。
+        </p>
+      </div>
     </div>
   </aside>
 </main>
@@ -62,7 +90,7 @@
 <footer class="statusbar">
   <span id="status">准备就绪</span>
   <span class="spacer"></span>
-  <span id="stat-ip">内存 256MB</span>
+  <span id="stat-ip" class="hide-sm">内存 256MB</span>
   <span id="stat-net">网络：未连接</span>
 </footer>
 

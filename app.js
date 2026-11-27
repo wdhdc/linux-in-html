@@ -307,3 +307,105 @@ window.addEventListener("load", async () => {
     el.btnStart.disabled = false;
     setStatus(overlay.size ? "已载入磁盘改动，点击“启动”" : "准备就绪，点击“启动”");
 });
+
+/* ----------------------------- 手机键盘 & 侧栏 ----------------------------- */
+
+const keybar = document.getElementById("keybar");
+const typeForm = document.getElementById("type-form");
+const typeIn = document.getElementById("type-in");
+const side = el.side;
+const panes = { term: document.getElementById("pane-term"), net: document.getElementById("pane-net") };
+const tabs = Array.from(document.querySelectorAll(".tab"));
+
+const SC = {
+    esc: [0x01, 0x81],
+    tab: [0x0f, 0x8f],
+    enter: [0x1c, 0x9c],
+    left: [0xe0, 0x4b, 0xe0, 0xcb],
+    up: [0xe0, 0x48, 0xe0, 0xc8],
+    down: [0xe0, 0x50, 0xe0, 0xd0],
+    right: [0xe0, 0x4d, 0xe0, 0xcd],
+};
+const LETTER = {
+    a: 0x1e, b: 0x30, c: 0x2e, d: 0x20, e: 0x12, f: 0x21, g: 0x22, h: 0x23,
+    i: 0x17, j: 0x24, k: 0x25, l: 0x26, m: 0x32, n: 0x31, o: 0x18, p: 0x19,
+    q: 0x10, r: 0x13, s: 0x1f, t: 0x14, u: 0x16, v: 0x2f, w: 0x11, x: 0x2d,
+    y: 0x15, z: 0x2c,
+};
+
+let ctrlOn = false;
+let altOn = false;
+
+function scancodes(codes) {
+    if (!emulator || !emulator.keyboard_send_scancodes) return;
+    emulator.keyboard_send_scancodes(codes);
+}
+
+function switchTab(name) {
+    tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+    Object.entries(panes).forEach(([k, node]) => node.classList.toggle("hidden", k !== name));
+}
+
+function openSide(tab = "term") {
+    side.classList.remove("hidden");
+    switchTab(tab);
+}
+
+tabs.forEach((t) => t.onclick = () => switchTab(t.dataset.tab));
+
+document.getElementById("btn-close-side").onclick = () => side.classList.add("hidden");
+
+keybar.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-key]");
+    if (!btn) return;
+    const key = btn.dataset.key;
+    if (key === "ctrl" || key === "alt") {
+        const on = key === "ctrl" ? !ctrlOn : !altOn;
+        if (key === "ctrl") ctrlOn = on; else altOn = on;
+        btn.classList.toggle("on", on);
+        scancodes(on ? [key === "ctrl" ? 0x1d : 0x38] : [key === "ctrl" ? 0x9d : 0xb8]);
+        return;
+    }
+    if (SC[key]) scancodes(SC[key]);
+});
+
+typeForm.onsubmit = (e) => {
+    e.preventDefault();
+    if (!emulator) return;
+    const text = typeIn.value;
+    if (!text) { scancodes(SC.enter); return; }
+
+    const mods = [];
+    if (ctrlOn) mods.push(0x1d);
+    if (altOn) mods.push(0x38);
+
+    if (mods.length) {
+        for (const ch of text) {
+            const low = ch.toLowerCase();
+            const code = LETTER[low] || (ch === " " ? 0x39 : null);
+            if (code) {
+                const seq = [...mods, code, 0x80 | code, ...mods.map((m) => 0x80 | m)];
+                scancodes(seq);
+            }
+        }
+        ctrlOn = altOn = false;
+        keybar.querySelectorAll(".key.on").forEach((b) => b.classList.remove("on"));
+        scancodes([0x9d, 0xb8]);
+    } else {
+        emulator.keyboard_send_text(text);
+        scancodes(SC.enter);
+    }
+    typeIn.value = "";
+};
+
+/* 移动端首屏不遮挡画面 */
+if (window.matchMedia("(max-width: 900px)").matches) side.classList.add("hidden");
+
+/* 打开控制台时默认显示串口 */
+el.btnPanel.onclick = () => {
+    if (side.classList.contains("hidden")) openSide("term");
+    else side.classList.add("hidden");
+};
+
+/* 移动端：点画面先聚焦，便于外接键盘；同时提示串口入口 */
+el.screen.addEventListener("click", () => el.screen.focus());
