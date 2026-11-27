@@ -35,6 +35,9 @@ const defaultWisp = isLocal
 
 el.wisp.value = qs.get("wisp") || defaultWisp;
 
+const ASSET = (qs.get("assets") || "").replace(/\/+$/, "");
+const A = (p) => (ASSET ? ASSET + "/" + p : p);
+
 let emulator = null;
 let ready = false;
 let serialBuffer = "";
@@ -164,10 +167,10 @@ function createEmulator() {
         screen_container: el.screen,
         bios: { url: "lib/seabios.bin" },
         vga_bios: { url: "lib/vgabios.bin" },
-        bzimage: { url: "images/vmlinuz" },
-        initrd: { url: "images/initrd.img" },
+        bzimage: { url: A("images/vmlinuz") },
+        initrd: { url: A("images/initrd.img") },
         hda: {
-            url: "images/disk.img",
+            url: A("images/disk.img"),
             size: DISK_SIZE,
             async: true,
             use_parts: true,
@@ -415,3 +418,55 @@ el.btnPanel.onclick = () => {
 
 /* 移动端：点画面先聚焦，便于外接键盘；同时提示串口入口 */
 el.screen.addEventListener("click", () => el.screen.focus());
+
+/* ----------------------------- 主题切换 ----------------------------- */
+
+const themeBtn = document.getElementById("btn-theme");
+const rootEl = document.documentElement;
+
+function applyTheme(name) {
+    if (name === "light") rootEl.dataset.theme = "light";
+    else delete rootEl.dataset.theme;
+    themeBtn.textContent = name === "light" ? "☀" : "☾";
+    try { localStorage.setItem("lih-theme", name); } catch {}
+}
+applyTheme(localStorage.getItem("lih-theme") || "dark");
+themeBtn.onclick = () => applyTheme(rootEl.dataset.theme === "light" ? "dark" : "light");
+
+/* ----------------------------- 引导日志覆盖层 ----------------------------- */
+
+const bootLog = document.getElementById("boot-log");
+const bootText = document.getElementById("boot-text");
+const bootSkip = document.getElementById("btn-boot-skip");
+let bootVisible = false;
+
+function showBootLog() {
+    bootVisible = true;
+    bootText.textContent = "";
+    bootLog.classList.remove("hidden");
+}
+function hideBootLog() {
+    bootVisible = false;
+    bootLog.classList.add("hidden");
+}
+bootSkip.onclick = hideBootLog;
+
+/* 复用串口输出：引导期把日志实时铺在画面上 */
+const _renderSerial = renderSerial;
+renderSerial = function () {
+    _renderSerial();
+    if (bootVisible) {
+        const nearBottom = bootText.scrollTop + bootText.clientHeight >= bootText.scrollHeight - 40;
+        bootText.textContent = serialBuffer.slice(-40000);
+        if (nearBottom) bootText.scrollTop = bootText.scrollHeight;
+    }
+};
+
+el.btnStart.addEventListener("click", showBootLog, true);
+el.btnReset.addEventListener("click", showBootLog, true);
+
+/* 看到 login: 或长时间无输出则收起覆盖层 */
+setInterval(() => {
+    if (bootVisible && /login:/.test(serialBuffer.slice(-2000))) hideBootLog();
+}, 1500);
+setTimeout(() => { if (bootVisible) hideBootLog(); }, 240000);

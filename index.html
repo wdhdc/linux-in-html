@@ -22,6 +22,7 @@
     <button id="btn-pause" disabled>暂停</button>
     <button id="btn-reset" disabled>重启</button>
     <button id="btn-full" disabled>全屏</button>
+    <button id="btn-theme" class="icon" title="切换亮/暗主题">☾</button>
     <button id="btn-panel">控制台</button>
   </nav>
 </header>
@@ -31,6 +32,13 @@
     <div id="screen_container" tabindex="0">
       <div class="text-layer"></div>
       <canvas></canvas>
+      <div id="boot-log" class="boot-log hidden">
+        <div class="boot-head">
+          <span class="led"></span> ttyS0 · 引导日志
+          <button id="btn-boot-skip" class="mini ghost">跳过</button>
+        </div>
+        <pre id="boot-text"></pre>
+      </div>
     </div>
 
     <div class="keybar" id="keybar">

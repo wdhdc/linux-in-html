@@ -72,3 +72,12 @@ images/         vmlinuz、initrd、disk 分块镜像
 - v86（copy/v86）—— x86 模拟器与 WASM JIT，BSD-2-Clause
 - SeaBIOS / VGA BIOS —— 来自 v86 仓库
 - Debian 12 i386 用户态 —— Debian 官方发行版
+
+## 国内网络（慢的时候这样绕）
+
+- guest 的 apt 已经换成阿里云镜像：`/etc/apt/sources.list.d/debian.sources` 指向 `mirrors.aliyun.com`；想换清华源把域名改成 `mirrors.tuna.tsinghua.edu.cn` 即可，`apt-get update` 不用再额外配代理。
+- 页面本体（v86、BIOS、前端）全部本地自带，不依赖 CDN/外网。
+- 唯一的大流量是从 GitHub Pages 拉 384MB 磁盘分块。慢的话可以用镜像前缀打开：
+  `index.html?assets=https://ghproxy.net/https://raw.githubusercontent.com/wdhdc/linux-in-html/gh-pages/images`
+  （把 `ghproxy.net` 换成你手头可用的 GitHub 反代/代理站点即可，路径部分保持不变。）
+- WISP 中继是 WebSocket 长连接，Pages 上必须填一个公网可访问的 `wss://…/wisp/`；国内可以用一台小 VPS 跑 `node server.js`，前面套 Nginx 反代并开 TLS。
