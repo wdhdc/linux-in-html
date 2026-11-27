@@ -407,3 +407,31 @@ html[data-theme="light"] .note { color: #5f6a7a; }
 }
 
 button.icon { padding: 7px 10px; font-size: 15px; }
+
+/* ------------------------------ 简易化：扁平控件 ------------------------------ */
+
+button {
+  background: #1c2532;
+  border-color: #2b3547;
+  box-shadow: none;
+}
+button.primary { background: #1d5f8c; border-color: #2b86c9; box-shadow: none; }
+.keybar .key { background: #1b2433; }
+.keybar .key.send { background: #153029; }
+.brand .dot { box-shadow: none; }
+#screen_container { box-shadow: inset 0 0 40px rgba(0,0,0,.85); }
+html[data-theme="light"] button { background: #fff; border-color: #d7deea; }
+html[data-theme="light"] button.primary { background: #1d6ea8; }
+html[data-theme="light"] .keybar .key { background: #fff; }
+
+select {
+  width: 100%;
+  background: #0b131f;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 10px;
+  font: 13.5px/1.4 inherit;
+}
+select:focus { outline: none; border-color: var(--accent); }
+html[data-theme="light"] select { background: #fff; border-color: #d7deea; color: #1b2431; }

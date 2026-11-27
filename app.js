@@ -323,7 +323,11 @@ const keybar = document.getElementById("keybar");
 const typeForm = document.getElementById("type-form");
 const typeIn = document.getElementById("type-in");
 const side = el.side;
-const panes = { term: document.getElementById("pane-term"), net: document.getElementById("pane-net") };
+const panes = {
+    term: document.getElementById("pane-term"),
+    net: document.getElementById("pane-net"),
+    settings: document.getElementById("pane-settings"),
+};
 const tabs = Array.from(document.querySelectorAll(".tab"));
 
 const SC = {
@@ -488,6 +492,9 @@ const I18N = {
         netConfigured: "已配置（WISP）", netMissing: "请填写 WISP 地址",
         resetMsg: "重启虚拟机…", confirmReload: "重连会重新创建虚拟机，当前未保存的进度会丢失，继续？",
         confirmClear: "清除浏览器里保存的磁盘改动？虚拟机将回到初始镜像状态。",
+        tabSet: "设置", mirrorLabel: "apt 镜像源", applyMirror: "应用到 guest",
+        mirrorIdle: "未应用", mirrorApplied: "已发送",
+        mirrorNote: "首次进系统后以 root 登录，点“应用到 guest”会通过串口执行 mirror 脚本并跑一次 apt-get update。也可以手动执行：mirror tuna。",
     },
     en: {
         start: "Start", pause: "Pause", reset: "Restart", full: "Fullscreen", console: "Console",
@@ -504,6 +511,9 @@ const I18N = {
         netConfigured: "Configured (WISP)", netMissing: "Enter a WISP URL",
         resetMsg: "Restarting VM…", confirmReload: "Reconnect recreates the VM and drops unsaved progress. Continue?",
         confirmClear: "Clear saved disk changes and return to the original image?",
+        tabSet: "Settings", mirrorLabel: "apt mirror", applyMirror: "Apply to guest",
+        mirrorIdle: "not applied", mirrorApplied: "sent",
+        mirrorNote: "Log in as root first. Apply sends the guest-side mirror command over the serial console and runs apt-get update once. Manual: mirror tuna.",
     },
 };
 
@@ -522,3 +532,30 @@ function applyLang(next) {
 }
 applyLang(lang);
 langBtn.onclick = () => applyLang(lang === "zh" ? "en" : "zh");
+
+/* ----------------------------- 设置：apt 镜像 ----------------------------- */
+
+const mirrorSel = document.getElementById("mirror");
+const mirrorBtn = document.getElementById("btn-apply-mirror");
+const mirrorState = document.getElementById("mirror-state");
+
+mirrorSel.value = localStorage.getItem("lih-mirror") || "aliyun";
+mirrorSel.onchange = () => {
+    try { localStorage.setItem("lih-mirror", mirrorSel.value); } catch {}
+    mirrorState.textContent = t("mirrorIdle");
+    mirrorState.classList.remove("ok", "bad");
+};
+
+mirrorBtn.onclick = () => {
+    const name = mirrorSel.value;
+    try { localStorage.setItem("lih-mirror", name); } catch {}
+    if (!emulator || !emulator.serial0_send) {
+        mirrorState.textContent = t("mirrorIdle");
+        mirrorState.classList.add("bad");
+        return;
+    }
+    emulator.serial0_send(`mirror ${name}\n`);
+    mirrorState.textContent = t("mirrorApplied");
+    mirrorState.classList.add("ok");
+    mirrorState.classList.remove("bad");
+};

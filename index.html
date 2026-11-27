@@ -65,6 +65,7 @@
       <div class="tabs">
         <button class="tab active" data-tab="term" data-i18n="tabSerial">串口</button>
         <button class="tab" data-tab="net" data-i18n="tabNet">网络</button>
+        <button class="tab" data-tab="settings" data-i18n="tabSet">设置</button>
       </div>
       <button id="btn-close-side" class="mini ghost" data-i18n="collapse">收起</button>
     </div>
@@ -90,6 +91,23 @@
         <p class="note" data-i18n="netNote">
           浏览器不能直接开 TCP 连接，虚拟机里的网络需要通过这个 WISP 中继转发。
           本机运行时用自带的 <code>server.js</code>；用 GitHub Pages 打开时请填写一个公网 WISP 地址。
+        </p>
+      </div>
+
+    <div class="pane hidden" id="pane-settings">
+      <div class="netbox">
+        <label for="mirror" data-i18n="mirrorLabel">apt 镜像源</label>
+        <select id="mirror">
+          <option value="aliyun">Aliyun · mirrors.aliyun.com (default)</option>
+          <option value="tuna">TUNA · mirrors.tuna.tsinghua.edu.cn</option>
+          <option value="debian">Debian · deb.debian.org</option>
+        </select>
+        <div class="row">
+          <button id="btn-apply-mirror" class="mini primary" data-i18n="applyMirror">应用到 guest</button>
+          <span class="badge" id="mirror-state" data-i18n="mirrorIdle">未应用</span>
+        </div>
+        <p class="note" data-i18n="mirrorNote">
+          首次进系统后以 root 登录，点“应用到 guest”会通过串口执行 <code>mirror</code> 脚本并跑一次 apt-get update。也可以手动执行：<code>mirror tuna</code>。
         </p>
       </div>
     </div>
