@@ -1,7 +1,7 @@
 /* linux-in-html 前端：v86 虚拟机控制、串口终端、磁盘增量持久化 */
 "use strict";
 
-const DISK_SIZE = 800 * 1024 * 1024;
+const DISK_SIZE = 384 * 1024 * 1024;
 const DISK_CHUNK = 32 * 1024 * 1024;
 const MEMORY_SIZE = 256 * 1024 * 1024;
 const BLOCK = 512;
@@ -187,6 +187,11 @@ function createEmulator() {
         renderSerial();
     });
 
+    emulator.add_listener("download-error", (e) => {
+        console.error(e);
+        setStatus("镜像下载失败，检查 images/ 是否完整");
+    });
+
     emulator.add_listener("emulator-ready", () => {
         ready = true;
         el.btnStart.disabled = false;
@@ -229,6 +234,7 @@ function renderSerial() {
 
 el.btnStart.onclick = () => {
     if (!emulator) createEmulator();
+    setStatus("正在加载镜像（384MB，首次较慢）…");
     if (ready) emulator.run();
 };
 
