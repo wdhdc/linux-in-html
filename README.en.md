@@ -49,7 +49,9 @@ guest (enp0s10) ──virtio-net──> v86 (browser / WebAssembly)
                                  Internet
 ```
 
-`server.js` serves static files, the disk chunks (HTTP Range) and the `/wisp/` relay in one process; it listens on `127.0.0.1` by default.
+`server.js` serves static files, the disk chunks (HTTP Range), the `/wisp/` relay and a `/dns-query` DNS relay in one process; it listens on `127.0.0.1` by default.
+
+Port 53 inside the guest is handed to the browser by v86; the page forwards that DoH request to `server.js`, which asks a real resolver over UDP (`223.5.5.5` first, then `114.114.114.114`, configurable with `--dns`). Name resolution therefore does not depend on the browser reaching a public DoH endpoint; on static hosting the route is missing and the page falls back to `cloudflare-dns.com`.
 
 After boot the page configures the guest NIC for v86's built-in NAT (`192.168.86.100/24`, gateway and DNS `192.168.86.1`). The network menu in the top bar shows both relay and guest state, plus a re-run button. Manual equivalent:
 
@@ -96,6 +98,7 @@ licenses/               full license texts (GPL-3.0 …)
 - Single core, no KVM: roughly early-2000s speed. Boot to desktop is 25–40 s; `apt install` needs patience.
 - The guest NIC appears as `enp0s10` in v86 (the image's `/etc/network/interfaces` was written for `eth0`), which is why the page uses the static commands above instead of `ifup`.
 - No CA bundle in the image: install `ca-certificates` before using `https://`.
+- Name resolution (port 53) goes through `server.js` `/dns-query` over UDP; without a local server the page falls back to public DoH (`cloudflare-dns.com`), and if that endpoint is unreachable the guest reports `Could not resolve host` while the TCP relay itself still works (verify with a direct-IP URL).
 - The serial channel is slow — keep injected files in the tens-of-KB range. The disk is 384 MB; check `df -h` before big installs.
 - No GPU acceleration and no sound card pass-through. You can `apt install xorg` inside the guest, but it will not be fast.
 - If memory is tight the page retries the boot at 320 / 256 / 192 / 128 MB before giving up.

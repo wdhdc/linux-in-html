@@ -52,7 +52,9 @@ guest（enp0s10） ──virtio-net──> v86（浏览器 / WebAssembly）
                                   互联网
 ```
 
-`server.js` 一个进程干三件事：静态文件、磁盘分块（HTTP Range 按需读取）、`/wisp/` 中继。默认只监听 `127.0.0.1`。
+`server.js` 一个进程干四件事：静态文件、磁盘分块（HTTP Range 按需读取）、`/wisp/` 中继、`/dns-query` DNS 中转。默认只监听 `127.0.0.1`。
+
+客户机的 53 端口由 v86 交给浏览器，页面再把这条 DoH 请求转给 `server.js` 用 UDP 问真实 DNS（默认 `223.5.5.5`，失败再试 `114.114.114.114`，可用 `--dns` 改），所以域名解析不依赖浏览器能否访问公网 DoH；Pages 上没有该路由，会自动回落到 `cloudflare-dns.com`。
 
 开机流程会在串口里把网卡配成 v86 内置 NAT 的约定地址（`192.168.86.100/24`，网关与 DNS `192.168.86.1`）。顶栏网络图标里能看到中继与 guest 网络状态，也有「立即配置 guest 网络」按钮。等价的手动命令：
 
@@ -109,6 +111,7 @@ licenses/               许可证全文（GPL-3.0 等）
 - 单核、无 KVM，性能大致相当于 2000 年代初的机器；进桌面 25–40 秒，`apt install` 要有耐心。
 - 客户机网卡在 v86 里叫 `enp0s10`，镜像自带的 `/etc/network/interfaces` 写的是 `eth0`，所以配网走上面的静态配置而不是 `ifup`。
 - 镜像不带 CA 证书，`https://` 先 `apt-get install -y ca-certificates`。
+- 域名解析（53 端口）由 v86 交给浏览器，页面转给 `server.js` 的 `/dns-query` 用 UDP 代问；`server.js` 不在或不通时回落到公网 DoH（`cloudflare-dns.com`），后者被网络挡住时客户机会报 `Could not resolve host`，而 TCP 中继本身仍然是通的（用 IP 直连可验证）。
 - 串口是慢通道，往里注入的文件几十 KB 级别最稳；只有一块 384 MB 盘，装大包前先 `df -h`。
 - 没有 GPU 加速、没有声卡直通；想在客户机里装 `xorg` 可以，但不会快。
 - 内存不足时页面会按 320 / 256 / 192 / 128 MB 依次重试启动，太小就起不来。

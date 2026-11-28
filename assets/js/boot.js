@@ -369,6 +369,37 @@
   }
 
   /* ---------------- 启动虚拟机 ---------------- */
+
+  /* v86 把客户机的 53 端口交给 browser fetch 做 DoH（默认 cloudflare-dns.com）。
+   * 公网 DoH 在部分网络里不可达，所以先打到同源 server.js 的 /dns-query（UDP 问真实 DNS），
+   * 拿不到 2xx 再回落到 v86 原本的公网 DoH；Pages 上没有该路由时会直接回落。 */
+  var dnsProxyInstalled = false;
+  function installDnsProxy() {
+    if (dnsProxyInstalled) return;
+    dnsProxyInstalled = true;
+    var raw = global.fetch;
+    if (typeof raw !== 'function') return;
+    if (!/^https?:$/.test(location.protocol) || location.hostname === '') return;
+    var proxyUrl = '/dns-query';
+    global.fetch = function (input, init) {
+      var isDohPost = typeof input === 'string' && /\/dns-query(\?|$)/.test(input) &&
+        init && String(init.method || '').toUpperCase() === 'POST' && init.body;
+      if (!isDohPost) return raw.call(global, input, init);
+      var opts = {
+        method: 'POST',
+        headers: { 'content-type': 'application/dns-message' },
+        body: init.body,
+        cache: 'no-store',
+        signal: init.signal
+      };
+      return raw.call(global, proxyUrl, opts).then(function (res) {
+        return res.ok ? res : raw.call(global, input, init);
+      }).catch(function () {
+        return raw.call(global, input, init);
+      });
+    };
+  }
+
   function memLadder() {
     var base = parseInt((settings().memSet ? settings().mem : 0), 10) || 256;
     var out = [];
@@ -376,6 +407,7 @@
     return out.length ? out : [base];
   }
   function startEmu() {
+    installDnsProxy();
     var ladder = memLadder();
     var mbSize = ladder[Math.min(bootState.tries, ladder.length - 1)];
     var Ctor = global.V86 || global.V86Starter;

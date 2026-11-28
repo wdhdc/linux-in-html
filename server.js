@@ -4,7 +4,7 @@
  *  - 静态文件服务（支持 HTTP Range，v86 磁盘按块按需读取）
  *  - WISP 网络中继（浏览器内虚拟机通过 WebSocket 访问真实 TCP 网络）
  *
- *  用法: node server.js [--port 8080] [--host 127.0.0.1] [--allow-any-host] [--block host1,host2]
+ *  用法: node server.js [--port 8080] [--host 127.0.0.1] [--allow-any-host] [--block host1,host2] [--dns 223.5.5.5,114.114.114.114]
  */
 "use strict";
 
@@ -30,6 +30,8 @@ function arg(name, def) {
 const PORT = parseInt(arg("port", "8080"), 10);
 const HOST = args.includes("--allow-any-host") ? "0.0.0.0" : arg("host", "127.0.0.1");
 const BLOCKED = (arg("block", "") || "").split(",").filter(Boolean);
+/* 页面把 v86 的 DoH 请求转给本服务，由这里用 UDP 问真实的 DNS；逗号分隔可给多个上游 */
+const DNS_UPSTREAM = (arg("dns", "223.5.5.5,114.114.114.114") || "223.5.5.5,114.114.114.114").split(",").filter(Boolean);
 
 const MIME = {
     ".html": "text/html; charset=utf-8",
@@ -137,12 +139,121 @@ function serveFile(req, res, filePath) {
     fs.createReadStream(filePath).pipe(res);
 }
 
+/* ------------------------------- DNS 中转（DoH 兼容） -------------------------------
+ * 浏览器里的 v86 会把客户机的 53 端口请求交给 browser fetch 做 DoH。公网 DoH 在部分网络
+ * 环境里不可达，所以页面优先把请求打到本服务的 /dns-query，由这里用 UDP 问真实 DNS，
+ * 再按 application/dns-message 原样回包；不通时页面自己回落到公网 DoH。
+ */
+const dgram = require("dgram");
+const MAX_DNS_BODY = 4096;
+let dnsRelayLogged = false;
+
+function dnsQueryUdp(payload, upstream, timeoutMs) {
+    return new Promise((resolve, reject) => {
+        const sock = dgram.createSocket("udp4");
+        let done = false;
+        const finish = (err, msg) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            try { sock.close(); } catch { }
+            if (err) reject(err); else resolve(msg);
+        };
+        const timer = setTimeout(() => finish(new Error("dns timeout")), timeoutMs || 6000);
+        sock.once("message", (msg) => finish(null, Buffer.from(msg)));
+        sock.once("error", (err) => finish(err));
+        sock.send(payload, 53, upstream, (err) => { if (err) finish(err); });
+    });
+}
+
+async function resolveDns(payload) {
+    for (const upstream of DNS_UPSTREAM) {
+        try {
+            const answer = await dnsQueryUdp(payload, upstream);
+            if (!dnsRelayLogged) {
+                dnsRelayLogged = true;
+                console.log(`[dns] 页面 DoH 请求已转给本机 UDP 上游：${upstream}`);
+            }
+            return answer;
+        } catch { /* 换下一个上游 */ }
+    }
+    console.warn("[dns] 所有上游都失败，页面会回落到公网 DoH");
+    return null;
+}
+
+function sendDnsAnswer(res, answer) {
+    if (!answer) {
+        res.writeHead(502, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
+        return res.end("dns upstream failed");
+    }
+    res.writeHead(200, {
+        "content-type": "application/dns-message",
+        "content-length": answer.length,
+        "cache-control": "no-store",
+        "access-control-allow-origin": "*",
+    });
+    res.end(answer);
+}
+
+function handleDnsPost(req, res) {
+    const chunks = [];
+    let size = 0;
+    let aborted = false;
+    req.on("data", (chunk) => {
+        size += chunk.length;
+        if (size > MAX_DNS_BODY) {
+            aborted = true;
+            res.writeHead(413, { "content-type": "text/plain; charset=utf-8" });
+            res.end("dns query too large");
+            req.destroy();
+            return;
+        }
+        chunks.push(chunk);
+    });
+    req.on("end", () => {
+        if (aborted) return;
+        const query = Buffer.concat(chunks);
+        if (!query.length) {
+            res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("empty dns query");
+        }
+        resolveDns(query).then((answer) => sendDnsAnswer(res, answer));
+    });
+    req.on("error", () => { });
+}
+
+function handleDnsGet(req, res, rawUrl) {
+    const query = new URL(rawUrl || "/dns-query", "http://localhost").searchParams.get("dns");
+    if (!query) {
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("missing ?dns=");
+    }
+    let buf;
+    try {
+        buf = Buffer.from(query.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+    } catch {
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("bad base64");
+    }
+    if (!buf.length || buf.length > MAX_DNS_BODY) {
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("bad dns query");
+    }
+    resolveDns(buf).then((answer) => sendDnsAnswer(res, answer));
+}
+
 const server = http.createServer((req, res) => {
     try {
         const url = (req.url || "/").split("?")[0];
         if (url === "/healthz") {
             res.writeHead(200, { "content-type": "application/json" });
-            return res.end(JSON.stringify({ ok: true, wisp: "/wisp/" }));
+            return res.end(JSON.stringify({ ok: true, wisp: "/wisp/", dns: DNS_UPSTREAM }));
+        }
+        if (url === "/dns-query") {
+            if (req.method === "POST") return handleDnsPost(req, res);
+            if (req.method === "GET") return handleDnsGet(req, res, req.url);
+            res.writeHead(405, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("method not allowed");
         }
         if (req.method !== "GET" && req.method !== "HEAD") {
             res.writeHead(405);

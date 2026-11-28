@@ -308,6 +308,7 @@ curl -sS http://example.com -o /dev/null -w '%{http_code}\n'
 apt-get update</code></pre>
   <p>镜像里的 apt 源默认已经换成阿里云（<code>/etc/apt/sources.list.d/debian.sources</code>），所以 <code>apt-get update</code> 可以直接跑通。想换源就改这个文件里的域名，例如改成 <code>mirrors.tuna.tsinghua.edu.cn</code>。</p>
   <div class="note"><strong>https 需要先装证书包。</strong>镜像里没有 CA 证书，<code>curl https://…</code> 会报证书相关的错误；先执行 <code>apt-get install -y ca-certificates</code> 再试。纯 http 和 apt 不受影响。</div>
+  <div class="note"><strong>DNS 走本机中转。</strong>客户机的 53 端口由 v86 交给浏览器，页面再把这条 DoH 请求转给 <code>server.js</code> 的 <code>/dns-query</code>，由它用 UDP 去问真实 DNS（默认 <code>223.5.5.5</code>，随后 <code>114.114.114.114</code>，可用 <code>--dns</code> 改）。这样解析不依赖浏览器能否访问公网 DoH；Pages 上没有这个路由，页面会自动回落到公网 <code>cloudflare-dns.com</code>。</div>
   <details>
     <summary>手动配置 guest 网络的等价命令（正常情况下用不到）</summary>
     <pre><code>IF=$(ls /sys/class/net | grep -v '^lo' | head -n1)
@@ -413,6 +414,7 @@ printf 'nameserver 192.168.86.1\n' > /etc/resolv.conf</code></pre>
 
   <h3>客户机没有网，curl 不是 200</h3>
   <p>先在「设置 → 网络」看 guest 网络状态，点重连或重新配置；本机模式确认 <code>server.js</code> 还在跑。Pages 模式确认填的是公网 <code>wss://…/wisp/</code>，并且那个中继服务真的在。</p>
+  <p>如果报的是 <code>Could not resolve host</code> 而不是连接超时，问题在 DNS：确认 <code>server.js</code> 还在跑（它同时负责 <code>/dns-query</code>），再确认本机能解析域名；Pages 模式下没有这个路由，会回落到公网 DoH，浏览器访问不到 <code>cloudflare-dns.com</code> 时就只能靠 IP 直连。</p>
 
   <h3>apt-get update 失败</h3>
   <p>先确认网络验证通过（上面那个 curl 返回 200）。apt 源默认指向阿里云，国内一般没问题；换源就改 <code>/etc/apt/sources.list.d/debian.sources</code>。磁盘满了会报空间不足，用 <code>df -h</code> 看一眼。</p>
