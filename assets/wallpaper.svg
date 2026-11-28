@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07121f"/><stop offset=".42" stop-color="#0d2540"/>
+      <stop offset=".72" stop-color="#123c60"/><stop offset="1" stop-color="#0a1b2c"/>
+    </linearGradient>
+    <radialGradient id="bloomA" cx=".28" cy=".30" r=".52">
+      <stop offset="0" stop-color="#3fa9ff" stop-opacity=".70"/><stop offset=".55" stop-color="#2b6fd0" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#2b6fd0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bloomB" cx=".74" cy=".24" r=".46">
+      <stop offset="0" stop-color="#28d7c4" stop-opacity=".52"/><stop offset=".6" stop-color="#1a8f9c" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#1a8f9c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bloomC" cx=".60" cy=".82" r=".58">
+      <stop offset="0" stop-color="#5b7cff" stop-opacity=".42"/><stop offset=".62" stop-color="#2b3fa8" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#2b3fa8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="warm" cx=".88" cy=".72" r=".34">
+      <stop offset="0" stop-color="#ffb46b" stop-opacity=".38"/><stop offset=".58" stop-color="#e0762f" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#e0762f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ribbon" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#8ad7ff" stop-opacity="0"/><stop offset=".45" stop-color="#bfe9ff" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vig" cx=".5" cy=".46" r=".78">
+      <stop offset=".55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity=".46"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#base)"/>
+  <g>
+    <ellipse cx="430" cy="300" rx="620" ry="470" fill="url(#bloomA)"/>
+    <ellipse cx="1190" cy="250" rx="520" ry="400" fill="url(#bloomB)"/>
+    <ellipse cx="960" cy="830" rx="700" ry="430" fill="url(#bloomC)"/>
+    <ellipse cx="1420" cy="740" rx="380" ry="300" fill="url(#warm)"/>
+  </g>
+  <path d="M-120 880 C 260 700 520 760 780 600 S 1320 380 1720 300 L1720 60 C 1280 180 900 300 620 470 S 120 720 -120 700 Z"
+        fill="url(#ribbon)" opacity=".55"/>
+  <path d="M-80 980 C 300 820 560 880 830 720 S 1360 520 1700 440" fill="none" stroke="#bfe9ff" stroke-opacity=".16" stroke-width="2"/>
+  <path d="M-80 1010 C 320 860 600 920 880 760 S 1400 560 1700 500" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="1.5"/>
+  <rect width="1600" height="1000" fill="url(#vig)"/>
+</svg>

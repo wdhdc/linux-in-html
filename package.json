@@ -2,7 +2,7 @@
   "name": "linux-in-html",
   "version": "1.0.0",
   "private": true,
-  "description": "在浏览器里跑一台真的 Debian 12（v86 + WISP 网络中继），不是截图复原",
+  "description": "在浏览器里跑一台真的 Debian 12 桌面（v86 + WISP 网络中继），不是截图复原",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,5 +11,5 @@
   "dependencies": {
     "ws": "^8.18.0"
   },
-  "license": "MIT"
+  "license": "GPL-3.0-or-later"
 }

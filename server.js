@@ -4,7 +4,7 @@
  *  - 静态文件服务（支持 HTTP Range，v86 磁盘按块按需读取）
  *  - WISP 网络中继（浏览器内虚拟机通过 WebSocket 访问真实 TCP 网络）
  *
- *  用法: node server.js [--port 8080] [--host 127.0.0.1] [--allow-any-host]
+ *  用法: node server.js [--port 8080] [--host 127.0.0.1] [--allow-any-host] [--block host1,host2]
  */
 "use strict";
 
@@ -12,16 +12,23 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const net = require("net");
-const { WebSocketServer } = require("ws");
+
+let WebSocketServer;
+try {
+    ({ WebSocketServer } = require("ws"));
+} catch {
+    console.error("缺少依赖 ws，请先在项目目录执行：npm install");
+    process.exit(1);
+}
 
 const ROOT = __dirname;
 const args = process.argv.slice(2);
 function arg(name, def) {
     const i = args.indexOf("--" + name);
-    return i >= 0 && args[i + 1] ? args[i + 1] : def;
+    return i >= 0 && args[i + 1] && !args[i + 1].startsWith("--") ? args[i + 1] : def;
 }
 const PORT = parseInt(arg("port", "8080"), 10);
-const HOST = arg("host", "127.0.0.1");
+const HOST = args.includes("--allow-any-host") ? "0.0.0.0" : arg("host", "127.0.0.1");
 const BLOCKED = (arg("block", "") || "").split(",").filter(Boolean);
 
 const MIME = {
@@ -41,10 +48,39 @@ const MIME = {
     ".md": "text/markdown; charset=utf-8",
 };
 
-function safeJoin(root, urlPath) {
-    const p = path.normalize(path.join(root, decodeURIComponent(urlPath)));
-    if (!p.startsWith(root)) return null;
-    return p;
+function resolvePath(urlPath) {
+    let decoded;
+    try {
+        decoded = decodeURIComponent(urlPath);
+    } catch {
+        return null;
+    }
+    const resolved = path.resolve(ROOT, "." + decoded.replace(/\\/g, "/"));
+    const rel = path.relative(ROOT, resolved);
+    if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return rel === "" ? resolved : null;
+    return resolved;
+}
+
+function parseRange(header, size) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+    if (!match) return "unsupported";
+    const [, first, second] = match;
+    if (first === "" && second === "") return "invalid";
+    let start;
+    let end;
+    if (first === "") {
+        const length = parseInt(second, 10);
+        if (!Number.isFinite(length) || length <= 0) return "invalid";
+        start = Math.max(0, size - length);
+        end = size - 1;
+    } else {
+        start = parseInt(first, 10);
+        end = second === "" ? size - 1 : parseInt(second, 10);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start > end) return "invalid";
+        end = Math.min(end, size - 1);
+        if (start >= size) return "invalid";
+    }
+    return { start, end };
 }
 
 function serveFile(req, res, filePath) {
@@ -52,63 +88,77 @@ function serveFile(req, res, filePath) {
     try {
         st = fs.statSync(filePath);
     } catch {
-        res.writeHead(404, { "content-type": "text/plain" });
+        res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
         return res.end("404 Not Found");
     }
-    if (st.isDirectory()) filePath = path.join(filePath, "index.html"), st = fs.statSync(filePath);
+    if (st.isDirectory()) {
+        filePath = path.join(filePath, "index.html");
+        try {
+            st = fs.statSync(filePath);
+        } catch {
+            res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("404 Not Found");
+        }
+    }
 
     const ext = path.extname(filePath).toLowerCase();
     const type = MIME[ext] || "application/octet-stream";
     const range = req.headers.range;
+    /* 前端代码改得勤，不缓存；镜像/引擎这类大文件才长缓存 */
+    const cacheControl = [".html", ".js", ".css", ".mjs"].includes(ext) ? "no-store" : "max-age=3600";
 
-    if (range && /^bytes=/.test(range)) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        let start = parseInt(parts[0], 10);
-        let end = parts[1] ? parseInt(parts[1], 10) : st.size - 1;
-        if (isNaN(start)) start = 0;
-        if (isNaN(end) || end > st.size - 1) end = st.size - 1;
-        if (start >= st.size) {
+    if (range) {
+        const parsed = parseRange(range, st.size);
+        if (parsed === "invalid") {
             res.writeHead(416, { "content-range": `bytes */${st.size}` });
             return res.end();
         }
-        res.writeHead(206, {
-            "content-type": type,
-            "content-length": end - start + 1,
-            "content-range": `bytes ${start}-${end}/${st.size}`,
-            "accept-ranges": "bytes",
-            "cache-control": "no-store",
-        });
-        const stream = fs.createReadStream(filePath, { start, end });
-        stream.pipe(res);
-        return;
+        if (parsed !== "unsupported") {
+            const { start, end } = parsed;
+            res.writeHead(206, {
+                "content-type": type,
+                "content-length": end - start + 1,
+                "content-range": `bytes ${start}-${end}/${st.size}`,
+                "accept-ranges": "bytes",
+                "cache-control": "no-store",
+            });            if (req.method === "HEAD") return res.end();
+            fs.createReadStream(filePath, { start, end }).pipe(res);
+            return;
+        }
     }
 
     res.writeHead(200, {
         "content-type": type,
         "content-length": st.size,
         "accept-ranges": "bytes",
-        "cache-control": ext === ".html" ? "no-store" : "max-age=3600",
+        "cache-control": cacheControl,
     });
     if (req.method === "HEAD") return res.end();
     fs.createReadStream(filePath).pipe(res);
 }
 
 const server = http.createServer((req, res) => {
-    const url = req.url.split("?")[0];
-    if (url === "/healthz") {
-        res.writeHead(200, { "content-type": "application/json" });
-        return res.end(JSON.stringify({ ok: true, wisp: "/wisp/" }));
+    try {
+        const url = (req.url || "/").split("?")[0];
+        if (url === "/healthz") {
+            res.writeHead(200, { "content-type": "application/json" });
+            return res.end(JSON.stringify({ ok: true, wisp: "/wisp/" }));
+        }
+        if (req.method !== "GET" && req.method !== "HEAD") {
+            res.writeHead(405);
+            return res.end("method not allowed");
+        }
+        const file = resolvePath(url === "/" ? "/index.html" : url);
+        if (!file) {
+            res.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("forbidden");
+        }
+        serveFile(req, res, file);
+    } catch (err) {
+        console.error("request failed:", err);
+        if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+        res.end("500 Internal Server Error");
     }
-    if (req.method !== "GET" && req.method !== "HEAD") {
-        res.writeHead(405);
-        return res.end("method not allowed");
-    }
-    const file = safeJoin(ROOT, url === "/" ? "/index.html" : url);
-    if (!file) {
-        res.writeHead(403);
-        return res.end("forbidden");
-    }
-    serveFile(req, res, file);
 });
 
 /* ------------------------------- WISP relay ------------------------------- */
