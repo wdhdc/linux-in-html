@@ -127,7 +127,8 @@ licenses/               许可证全文（GPL-3.0 等）
 ## 许可与署名
 
 - **本项目的桌面 UI、窗口管理器、终端渲染器、桥接层与各个应用改编自 Toy Linux（作者 LING不道 / 凌徐鲲，GPL-3.0-or-later，<https://gitee.com/ling-xukun/toylinux>）**，因此这部分及其组合作品按 **GPL-3.0-or-later** 分发，并保留原作者署名。许可证全文见 [`licenses/GPL-3.0.md`](licenses/GPL-3.0.md)，来源与改动说明见 [`NOTICE.md`](NOTICE.md)。
-- `server.js`、`index.html`、`usage.html`、启动脚本为本项目原创，另外可按 **MIT** 使用（见 [`licenses/MIT.md`](licenses/MIT.md)）。整个仓库作为组合作品对外分发时按 GPL-3.0-or-later。
+- `server.js`、`index.html`、`usage.html`、启动脚本为本项目原创，**逐文件按 MIT** 授权（见 [`licenses/MIT.md`](licenses/MIT.md)）。整个仓库一起分发时按组合作品标注 GPL-3.0-or-later，但 `server.js` 仍可单独取出按 MIT 使用。
+- **GPL 边界**：`server.js` 是独立 Node 进程，和前端只通过 HTTP / WebSocket 通信，不 `import`、不链接同一二进制，属于独立作品而非衍生作品，GPL 不跨这条边界；反过来，单独拿走 `term.js` / `wm.js` / `apps.js` 等 8 个派生文件时必须继续遵守 GPL-3.0-or-later。展开说明见 [`NOTICE.md`](NOTICE.md) 的「许可边界」。
 - v86（BSD-2-Clause）、SeaBIOS / SeaVGABIOS（LGPL-3.0）、Debian 内核与 rootfs 二进制（各包自身许可，以 GPL 为主）作为独立文件分发，保持各自许可证，详见 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)。
 - 镜像里保留 `/usr/share/doc/*/copyright`；GPL 二进制的对应源码地址与书面要约写在 `THIRD-PARTY-NOTICES.md`。
 

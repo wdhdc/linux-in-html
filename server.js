@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 /*
  * linux-in-html 本地运行服务
+ *
+ * 许可：本文件为本项目原创（不派生自 Toy Linux），按 MIT 单独授权，全文见 licenses/MIT.md。
+ *       它是独立的 Node 进程，与前端（其中 8 个文件为 GPL 派生）之间只通过网络协议通信，
+ *       不构成衍生作品，因此不受 GPL-3.0-or-later 传染；详见 NOTICE.md「许可边界」。
+ *
  *  - 静态文件服务（支持 HTTP Range，v86 磁盘按块按需读取）
  *  - WISP 网络中继（浏览器内虚拟机通过 WebSocket 访问真实 TCP 网络）
+ *  - /dns-query DNS 中转（浏览器侧 DoH 请求转成 UDP 查询，回给客户机）
  *
  *  用法: node server.js [--port 8080] [--host 127.0.0.1] [--allow-any-host] [--block host1,host2] [--dns 223.5.5.5,114.114.114.114]
  */
