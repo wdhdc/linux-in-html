@@ -1,0 +1,28 @@
+/* Linux in HTML · 在桌面主题之上补充的少量样式（网络面板、状态徽标等）
+   改编自 Toy Linux（作者 LING不道，GPL-3.0-or-later）的目录/命名约定 */
+.lih-netmenu {
+  width: min(360px, calc(100vw - 20px));
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #e9e9e9;
+}
+.lih-net-title { font-size: 12px; font-weight: 600; color: #c8c8c8; letter-spacing: .2px; }
+.lih-net-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #3d3d3d;
+  background: #1f1f1f;
+  color: #e9e9e9;
+  font: 12.5px/1.4 ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+.lih-net-input:focus { outline: none; border-color: #3584e4; }
+.lih-net-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.lih-netmenu button { text-align: left; color: #e9e9e9; }
+.lih-netmenu button:hover { background: #3a3a3a; }
+.lih-netmenu .pop-note { color: #9a9a9a; line-height: 1.5; }
+
+.tb-icon.ok { color: #2ec27e; }

@@ -4,7 +4,7 @@
  *  - 静态文件服务（支持 HTTP Range，v86 磁盘按块按需读取）
  *  - WISP 网络中继（浏览器内虚拟机通过 WebSocket 访问真实 TCP 网络）
  *
- *  用法: node server.js [--port 8080] [--host 127.0.0.1] [--allow-any-host]
+ *  用法: node server.js [--port 8080] [--host 127.0.0.1] [--allow-any-host] [--block host1,host2] [--dns 223.5.5.5,114.114.114.114]
  */
 "use strict";
 
@@ -12,17 +12,26 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const net = require("net");
-const { WebSocketServer } = require("ws");
+
+let WebSocketServer;
+try {
+    ({ WebSocketServer } = require("ws"));
+} catch {
+    console.error("缺少依赖 ws，请先在项目目录执行：npm install");
+    process.exit(1);
+}
 
 const ROOT = __dirname;
 const args = process.argv.slice(2);
 function arg(name, def) {
     const i = args.indexOf("--" + name);
-    return i >= 0 && args[i + 1] ? args[i + 1] : def;
+    return i >= 0 && args[i + 1] && !args[i + 1].startsWith("--") ? args[i + 1] : def;
 }
 const PORT = parseInt(arg("port", "8080"), 10);
-const HOST = arg("host", "127.0.0.1");
+const HOST = args.includes("--allow-any-host") ? "0.0.0.0" : arg("host", "127.0.0.1");
 const BLOCKED = (arg("block", "") || "").split(",").filter(Boolean);
+/* 页面把 v86 的 DoH 请求转给本服务，由这里用 UDP 问真实的 DNS；逗号分隔可给多个上游 */
+const DNS_UPSTREAM = (arg("dns", "223.5.5.5,114.114.114.114") || "223.5.5.5,114.114.114.114").split(",").filter(Boolean);
 
 const MIME = {
     ".html": "text/html; charset=utf-8",
@@ -41,10 +50,39 @@ const MIME = {
     ".md": "text/markdown; charset=utf-8",
 };
 
-function safeJoin(root, urlPath) {
-    const p = path.normalize(path.join(root, decodeURIComponent(urlPath)));
-    if (!p.startsWith(root)) return null;
-    return p;
+function resolvePath(urlPath) {
+    let decoded;
+    try {
+        decoded = decodeURIComponent(urlPath);
+    } catch {
+        return null;
+    }
+    const resolved = path.resolve(ROOT, "." + decoded.replace(/\\/g, "/"));
+    const rel = path.relative(ROOT, resolved);
+    if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return rel === "" ? resolved : null;
+    return resolved;
+}
+
+function parseRange(header, size) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+    if (!match) return "unsupported";
+    const [, first, second] = match;
+    if (first === "" && second === "") return "invalid";
+    let start;
+    let end;
+    if (first === "") {
+        const length = parseInt(second, 10);
+        if (!Number.isFinite(length) || length <= 0) return "invalid";
+        start = Math.max(0, size - length);
+        end = size - 1;
+    } else {
+        start = parseInt(first, 10);
+        end = second === "" ? size - 1 : parseInt(second, 10);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start > end) return "invalid";
+        end = Math.min(end, size - 1);
+        if (start >= size) return "invalid";
+    }
+    return { start, end };
 }
 
 function serveFile(req, res, filePath) {
@@ -52,63 +90,186 @@ function serveFile(req, res, filePath) {
     try {
         st = fs.statSync(filePath);
     } catch {
-        res.writeHead(404, { "content-type": "text/plain" });
+        res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
         return res.end("404 Not Found");
     }
-    if (st.isDirectory()) filePath = path.join(filePath, "index.html"), st = fs.statSync(filePath);
+    if (st.isDirectory()) {
+        filePath = path.join(filePath, "index.html");
+        try {
+            st = fs.statSync(filePath);
+        } catch {
+            res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("404 Not Found");
+        }
+    }
 
     const ext = path.extname(filePath).toLowerCase();
     const type = MIME[ext] || "application/octet-stream";
     const range = req.headers.range;
+    /* 前端代码改得勤，不缓存；镜像/引擎这类大文件才长缓存 */
+    const cacheControl = [".html", ".js", ".css", ".mjs"].includes(ext) ? "no-store" : "max-age=3600";
 
-    if (range && /^bytes=/.test(range)) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        let start = parseInt(parts[0], 10);
-        let end = parts[1] ? parseInt(parts[1], 10) : st.size - 1;
-        if (isNaN(start)) start = 0;
-        if (isNaN(end) || end > st.size - 1) end = st.size - 1;
-        if (start >= st.size) {
+    if (range) {
+        const parsed = parseRange(range, st.size);
+        if (parsed === "invalid") {
             res.writeHead(416, { "content-range": `bytes */${st.size}` });
             return res.end();
         }
-        res.writeHead(206, {
-            "content-type": type,
-            "content-length": end - start + 1,
-            "content-range": `bytes ${start}-${end}/${st.size}`,
-            "accept-ranges": "bytes",
-            "cache-control": "no-store",
-        });
-        const stream = fs.createReadStream(filePath, { start, end });
-        stream.pipe(res);
-        return;
+        if (parsed !== "unsupported") {
+            const { start, end } = parsed;
+            res.writeHead(206, {
+                "content-type": type,
+                "content-length": end - start + 1,
+                "content-range": `bytes ${start}-${end}/${st.size}`,
+                "accept-ranges": "bytes",
+                "cache-control": "no-store",
+            });            if (req.method === "HEAD") return res.end();
+            fs.createReadStream(filePath, { start, end }).pipe(res);
+            return;
+        }
     }
 
     res.writeHead(200, {
         "content-type": type,
         "content-length": st.size,
         "accept-ranges": "bytes",
-        "cache-control": ext === ".html" ? "no-store" : "max-age=3600",
+        "cache-control": cacheControl,
     });
     if (req.method === "HEAD") return res.end();
     fs.createReadStream(filePath).pipe(res);
 }
 
+/* ------------------------------- DNS 中转（DoH 兼容） -------------------------------
+ * 浏览器里的 v86 会把客户机的 53 端口请求交给 browser fetch 做 DoH。公网 DoH 在部分网络
+ * 环境里不可达，所以页面优先把请求打到本服务的 /dns-query，由这里用 UDP 问真实 DNS，
+ * 再按 application/dns-message 原样回包；不通时页面自己回落到公网 DoH。
+ */
+const dgram = require("dgram");
+const MAX_DNS_BODY = 4096;
+let dnsRelayLogged = false;
+
+function dnsQueryUdp(payload, upstream, timeoutMs) {
+    return new Promise((resolve, reject) => {
+        const sock = dgram.createSocket("udp4");
+        let done = false;
+        const finish = (err, msg) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            try { sock.close(); } catch { }
+            if (err) reject(err); else resolve(msg);
+        };
+        const timer = setTimeout(() => finish(new Error("dns timeout")), timeoutMs || 6000);
+        sock.once("message", (msg) => finish(null, Buffer.from(msg)));
+        sock.once("error", (err) => finish(err));
+        sock.send(payload, 53, upstream, (err) => { if (err) finish(err); });
+    });
+}
+
+async function resolveDns(payload) {
+    for (const upstream of DNS_UPSTREAM) {
+        try {
+            const answer = await dnsQueryUdp(payload, upstream);
+            if (!dnsRelayLogged) {
+                dnsRelayLogged = true;
+                console.log(`[dns] 页面 DoH 请求已转给本机 UDP 上游：${upstream}`);
+            }
+            return answer;
+        } catch { /* 换下一个上游 */ }
+    }
+    console.warn("[dns] 所有上游都失败，页面会回落到公网 DoH");
+    return null;
+}
+
+function sendDnsAnswer(res, answer) {
+    if (!answer) {
+        res.writeHead(502, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
+        return res.end("dns upstream failed");
+    }
+    res.writeHead(200, {
+        "content-type": "application/dns-message",
+        "content-length": answer.length,
+        "cache-control": "no-store",
+        "access-control-allow-origin": "*",
+    });
+    res.end(answer);
+}
+
+function handleDnsPost(req, res) {
+    const chunks = [];
+    let size = 0;
+    let aborted = false;
+    req.on("data", (chunk) => {
+        size += chunk.length;
+        if (size > MAX_DNS_BODY) {
+            aborted = true;
+            res.writeHead(413, { "content-type": "text/plain; charset=utf-8" });
+            res.end("dns query too large");
+            req.destroy();
+            return;
+        }
+        chunks.push(chunk);
+    });
+    req.on("end", () => {
+        if (aborted) return;
+        const query = Buffer.concat(chunks);
+        if (!query.length) {
+            res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("empty dns query");
+        }
+        resolveDns(query).then((answer) => sendDnsAnswer(res, answer));
+    });
+    req.on("error", () => { });
+}
+
+function handleDnsGet(req, res, rawUrl) {
+    const query = new URL(rawUrl || "/dns-query", "http://localhost").searchParams.get("dns");
+    if (!query) {
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("missing ?dns=");
+    }
+    let buf;
+    try {
+        buf = Buffer.from(query.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+    } catch {
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("bad base64");
+    }
+    if (!buf.length || buf.length > MAX_DNS_BODY) {
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("bad dns query");
+    }
+    resolveDns(buf).then((answer) => sendDnsAnswer(res, answer));
+}
+
 const server = http.createServer((req, res) => {
-    const url = req.url.split("?")[0];
-    if (url === "/healthz") {
-        res.writeHead(200, { "content-type": "application/json" });
-        return res.end(JSON.stringify({ ok: true, wisp: "/wisp/" }));
+    try {
+        const url = (req.url || "/").split("?")[0];
+        if (url === "/healthz") {
+            res.writeHead(200, { "content-type": "application/json" });
+            return res.end(JSON.stringify({ ok: true, wisp: "/wisp/", dns: DNS_UPSTREAM }));
+        }
+        if (url === "/dns-query") {
+            if (req.method === "POST") return handleDnsPost(req, res);
+            if (req.method === "GET") return handleDnsGet(req, res, req.url);
+            res.writeHead(405, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("method not allowed");
+        }
+        if (req.method !== "GET" && req.method !== "HEAD") {
+            res.writeHead(405);
+            return res.end("method not allowed");
+        }
+        const file = resolvePath(url === "/" ? "/index.html" : url);
+        if (!file) {
+            res.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+            return res.end("forbidden");
+        }
+        serveFile(req, res, file);
+    } catch (err) {
+        console.error("request failed:", err);
+        if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+        res.end("500 Internal Server Error");
     }
-    if (req.method !== "GET" && req.method !== "HEAD") {
-        res.writeHead(405);
-        return res.end("method not allowed");
-    }
-    const file = safeJoin(ROOT, url === "/" ? "/index.html" : url);
-    if (!file) {
-        res.writeHead(403);
-        return res.end("forbidden");
-    }
-    serveFile(req, res, file);
 });
 
 /* ------------------------------- WISP relay ------------------------------- */

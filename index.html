@@ -1,127 +1,116 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1220">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Linux in HTML · Debian 12 浏览器虚拟机</title>
-<link rel="stylesheet" href="style.css">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f6f5f2">
+<title>Linux in HTML · 浏览器里的桌面 Debian</title>
+<link rel="icon" href="assets/icons/logo.svg">
+<link rel="stylesheet" href="assets/css/desktop.css">
+<link rel="stylesheet" href="assets/css/lih.css">
 </head>
-<body>
+<body class="booting">
 
-<header class="topbar">
-  <div class="brand">
-    <span class="dot"></span>
-    <strong>Linux in HTML</strong>
-    <span class="sub">Debian 12 · i386 · v86</span>
+<div id="boot" aria-label="正在启动">
+  <div class="boot-inner">
+    <svg class="boot-logo" viewBox="0 0 96 96" aria-hidden="true">
+      <rect class="bl-tile" x="3" y="3" width="90" height="90" rx="21"/>
+      <rect class="bl-frame" x="20" y="25" width="56" height="46" rx="9"/>
+      <path class="bl-bar" d="M20 36.5h56"/>
+      <circle class="bl-dot" cx="27.5" cy="31" r="1.9"/>
+      <circle class="bl-dot dim" cx="33.5" cy="31" r="1.9"/>
+      <path class="bl-chev" d="M31.5 47.5l8.5 7-8.5 7"/>
+      <rect class="bl-cursor" x="45" y="58" width="15" height="4.4" rx="2.2"/>
+    </svg>
+    <div class="boot-name">Linux in HTML</div>
+    <div class="boot-sub">Debian 12 · Linux 6.1 · i386</div>
+    <div class="boot-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="boot-bar"><i id="boot-progress"></i></div>
+    <div class="boot-phase" id="boot-phase">正在准备…</div>
+    <div class="boot-log" id="boot-log" hidden>
+      <div class="bl-head"><span>ttyS0 · 串口实时输出（可选中复制、可向上滚动）</span><span class="bl-hint">引导中</span></div>
+      <div class="bl-term" id="bl-term"></div>
+    </div>
+    <div class="boot-actions" id="boot-actions" hidden>
+      <button id="boot-retry" class="boot-btn">重新加载</button>
+      <button id="boot-skip" class="boot-btn ghost">跳过动画</button>
+    </div>
   </div>
-  <nav class="actions">
-    <button id="btn-start" class="primary" data-i18n="start">启动</button>
-    <button id="btn-pause" disabled data-i18n="pause">暂停</button>
-    <button id="btn-reset" disabled data-i18n="reset">重启</button>
-    <button id="btn-full" disabled data-i18n="full">全屏</button>
-    <button id="btn-lang" class="icon" title="Language">EN</button>
-    <button id="btn-theme" class="icon" title="Theme">☾</button>
-    <button id="btn-panel" data-i18n="console">控制台</button>
-  </nav>
-</header>
+</div>
 
-<main class="workspace">
-  <section class="screen-wrap">
-    <div id="screen_container" tabindex="0">
-      <div class="text-layer"></div>
-      <canvas></canvas>
-      <div id="boot-log" class="boot-log hidden">
-        <div class="boot-head">
-          <span class="led"></span> <span data-i18n="bootTitle">ttyS0 · 引导日志</span>
-          <button id="btn-boot-skip" class="mini ghost" data-i18n="skip">跳过</button>
-        </div>
-        <pre id="boot-text"></pre>
-      </div>
+<div id="desktop" class="wp-1">
+  <header id="topbar">
+    <button class="tb-btn" id="tb-activities">活动</button>
+    <span class="tb-app" id="tb-app">桌面</span>
+    <div class="tb-center" id="tb-clock">--:--</div>
+    <div class="tb-right">
+      <span class="tb-kernel" id="tb-kernel"></span>
+      <button class="tb-icon" id="tb-theme" title="切换亮色 / 暗色主题"><svg aria-hidden="true"><use href="assets/icons/sprite.svg#i-moon"/></svg></button>
+      <button class="tb-icon" id="tb-network" title="网络与磁盘"><svg aria-hidden="true"><use href="assets/icons/sprite.svg#i-network"/></svg></button>
+      <button class="tb-icon" id="tb-volume" title="扬声器"><svg aria-hidden="true"><use href="assets/icons/sprite.svg#i-volume"/></svg></button>
+      <button class="tb-icon" id="tb-power" title="电源"><svg aria-hidden="true"><use href="assets/icons/sprite.svg#i-power"/></svg></button>
+      <span class="tb-dot" id="tb-dot"></span>
     </div>
+  </header>
 
-    <div class="keybar" id="keybar">
-      <button class="key" data-key="esc">Esc</button>
-      <button class="key" data-key="tab">Tab</button>
-      <button class="key" data-key="ctrl">Ctrl</button>
-      <button class="key" data-key="alt">Alt</button>
-      <button class="key" data-key="left">←</button>
-      <button class="key" data-key="up">↑</button>
-      <button class="key" data-key="down">↓</button>
-      <button class="key" data-key="right">→</button>
-      <form id="type-form" class="typebox">
-        <input id="type-in" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="点这里用手机键盘输入" data-i18n-ph="typePh">
-        <button type="submit" class="key send">⏎</button>
-      </form>
+  <div class="boot-error" id="boot-error" hidden>
+    <span class="be-msg"></span>
+    <button id="boot-error-retry">重新加载</button>
+    <button id="boot-error-diag">诊断</button>
+  </div>
+
+  <div id="activities" class="pop" hidden></div>
+
+  <div id="powermenu" class="pop" hidden>
+    <button data-act="restart">重启虚拟机</button>
+    <button data-act="clear-disk">清除磁盘改动…</button>
+    <button data-act="diag">启动诊断</button>
+    <button data-act="about">系统设置</button>
+    <div class="pop-sep"></div>
+    <div class="pop-note">关闭浏览器标签页即可退出</div>
+  </div>
+
+  <div id="netmenu" class="pop lih-netmenu" hidden>
+    <div class="lih-net-title">网络中继（WISP）</div>
+    <input id="net-wisp" class="lih-net-input" spellcheck="false" autocomplete="off" placeholder="wss://your-relay.example/wisp/">
+    <div class="lih-net-row">
+      <span class="badge" id="net-relay-badge">未连接</span>
+      <span class="badge" id="net-guest-badge">guest 网络：未配置</span>
     </div>
+    <button data-act="reconnect">保存并重连</button>
+    <button data-act="guest-net">立即配置 guest 网络</button>
+    <button data-act="clear-disk">清除磁盘改动…</button>
+    <div class="pop-sep"></div>
+    <div class="pop-note" id="net-note">本机默认使用自己 server.js 的 /wisp/ 中继</div>
+  </div>
 
-    <p class="hint" data-i18n="hint">手机上先点输入框打字，回车发送；虚拟终端需要已登录。画面卡住时可到「控制台」看内核输出。</p>
-  </section>
+  <div id="windows"></div>
+  <div id="screen-holder" hidden>
+    <div id="screen_container"><div id="screen"></div><canvas id="vga"></canvas></div>
+  </div>
+  <nav id="dock" aria-label="应用"></nav>
+</div>
 
-  <aside id="side" class="side">
-    <div class="side-head">
-      <div class="tabs">
-        <button class="tab active" data-tab="term" data-i18n="tabSerial">串口</button>
-        <button class="tab" data-tab="net" data-i18n="tabNet">网络</button>
-        <button class="tab" data-tab="settings" data-i18n="tabSet">设置</button>
-      </div>
-      <button id="btn-close-side" class="mini ghost" data-i18n="collapse">收起</button>
-    </div>
+<div id="diag" hidden>
+  <div class="diag-box">
+    <div class="diag-head"><b>启动诊断</b><button id="diag-close">关闭</button></div>
+    <div class="diag-body" id="diag-body"></div>
+  </div>
+</div>
 
-    <div class="pane" id="pane-term">
-      <pre id="serial-out" class="serial"></pre>
-      <form id="serial-form" class="serial-input">
-        <span>&gt;</span>
-        <input id="serial-in" autocomplete="off" spellcheck="false" placeholder="已登录后在这里发命令" data-i18n-ph="serialPh">
-        <button type="submit" class="mini" data-i18n="send">发送</button>
-      </form>
-    </div>
+<div id="switcher" hidden></div>
+<div id="toasts"></div>
 
-    <div class="pane hidden" id="pane-net">
-      <div class="netbox">
-        <label for="wisp" data-i18n="wispLabel">网络中继（WISP，WebSocket）</label>
-        <input id="wisp" spellcheck="false" placeholder="wss://your-relay.example/wisp/">
-        <div class="row">
-          <span id="net-state" class="badge" data-i18n="netNone">未连接</span>
-          <button id="btn-net" class="mini" data-i18n="reconnect">重连</button>
-          <button id="btn-clear-disk" class="mini danger" data-i18n="clearDisk">清除磁盘改动</button>
-        </div>
-        <p class="note" data-i18n="netNote">
-          浏览器不能直接开 TCP 连接，虚拟机里的网络需要通过这个 WISP 中继转发。
-          本机运行时用自带的 <code>server.js</code>；用 GitHub Pages 打开时请填写一个公网 WISP 地址。
-        </p>
-      </div>
-
-    <div class="pane hidden" id="pane-settings">
-      <div class="netbox">
-        <label for="mirror" data-i18n="mirrorLabel">apt 镜像源</label>
-        <select id="mirror">
-          <option value="aliyun">Aliyun · mirrors.aliyun.com (default)</option>
-          <option value="tuna">TUNA · mirrors.tuna.tsinghua.edu.cn</option>
-          <option value="debian">Debian · deb.debian.org</option>
-        </select>
-        <div class="row">
-          <button id="btn-apply-mirror" class="mini primary" data-i18n="applyMirror">应用到 guest</button>
-          <span class="badge" id="mirror-state" data-i18n="mirrorIdle">未应用</span>
-        </div>
-        <p class="note" data-i18n="mirrorNote">
-          首次进系统后以 root 登录，点“应用到 guest”会通过串口执行 <code>mirror</code> 脚本并跑一次 apt-get update。也可以手动执行：<code>mirror tuna</code>。
-        </p>
-      </div>
-    </div>
-  </aside>
-</main>
-
-<footer class="statusbar">
-  <span id="status" data-i18n="ready">准备就绪</span>
-  <span class="spacer"></span>
-  <span id="stat-ip" class="hide-sm">内存 256MB</span>
-  <span id="stat-net" data-i18n="netOffline">网络：未连接</span>
-</footer>
+<noscript><p style="padding:24px;font:15px system-ui">这个页面需要 JavaScript 才能启动虚拟机。</p></noscript>
 
 <script src="lib/v86.js"></script>
-<script src="app.js"></script>
+<script src="assets/js/term.js"></script>
+<script src="assets/js/bridge.js"></script>
+<script src="assets/js/wm.js"></script>
+<script src="assets/js/apps.js"></script>
+<script src="assets/js/extras.js"></script>
+<script src="assets/js/anim.js"></script>
+<script src="assets/js/boot.js"></script>
 </body>
 </html>

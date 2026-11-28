@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Linux in HTML 使用说明：在浏览器里真跑 Debian GNU/Linux 12 (bookworm) i386 虚拟机，含启动、界面、应用、WISP 网络、磁盘持久化与许可说明。">
+<title>Linux in HTML 使用说明</title>
+<style>
+:root{
+  --bg:#f7f5f2; --card:#ffffff; --text:#23262a; --text-2:#4b5056; --text-3:#6c7278;
+  --line:#e5e0da; --accent:#a8143c; --accent-strong:#7c0d2b; --accent-soft:#fbe8ee;
+  --code:#f2efeb; --shadow:0 1px 2px rgba(35,38,42,.05),0 10px 30px rgba(35,38,42,.06);
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#151719; --card:#202327; --text:#eeece8; --text-2:#c4c0ba; --text-3:#989590;
+    --line:#33373b; --accent:#ff9db5; --accent-strong:#ffc2d1; --accent-soft:#3a2029;
+    --code:#2a2e32; --shadow:0 1px 2px rgba(0,0,0,.34),0 12px 34px rgba(0,0,0,.4);
+  }
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;padding:0 16px 60px;background:var(--bg);color:var(--text);overflow-x:hidden;
+  font:15px/1.75 "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",
+    system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+.wrap{max-width:880px;margin:0 auto}
+header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:22px 0 6px}
+header.top svg{width:42px;height:42px;flex:0 0 auto}
+h1{margin:0;font-size:20px;font-weight:650;letter-spacing:.01em}
+.sub{margin-top:2px;font-size:12.5px;line-height:1.5;color:var(--text-3)}
+.back{
+  margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:11px;
+  background:var(--card);color:var(--text);font-size:13.5px;text-decoration:none;
+  box-shadow:var(--shadow);transition:transform .12s ease,border-color .16s ease;
+}
+.back:hover{border-color:var(--accent)}
+.back:active{transform:scale(.97)}
+.back-tip{
+  margin:10px 0 0;padding:9px 13px;border-radius:10px;
+  background:var(--accent-soft);color:var(--accent-strong);font-size:13px;
+}
+.back-tip[hidden]{display:none}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 20px;margin:14px 0;box-shadow:var(--shadow);
+}
+.toc h2{margin-bottom:12px}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.toc-grid a{
+  display:block;padding:7px 11px;border:1px solid var(--line);border-radius:9px;
+  color:var(--text-2);font-size:13.5px;text-decoration:none;
+  transition:border-color .16s ease,color .16s ease;
+}
+.toc-grid a:hover,.toc-grid a:focus-visible{border-color:var(--accent);color:var(--accent-strong)}
+h2{font-size:16.5px;font-weight:650;margin:0 0 10px;scroll-margin-top:16px}
+h3{font-size:14px;font-weight:600;color:var(--text-2);margin:16px 0 4px}
+p{margin:8px 0}
+ul,ol{margin:8px 0 8px 20px;padding:0}
+li{margin:5px 0}
+li::marker{color:var(--text-3)}
+a{color:var(--accent-strong)}
+strong{font-weight:600}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:12.5px;background:var(--code);padding:1.5px 5px;border-radius:5px;word-break:break-word;
+}
+pre{
+  margin:10px 0;padding:12px 14px;background:var(--code);border:1px solid var(--line);
+  border-radius:10px;overflow-x:auto;font-size:12.5px;line-height:1.65;
+  -webkit-overflow-scrolling:touch;
+}
+pre code{background:none;padding:0;font-size:inherit;border-radius:0;white-space:pre;word-break:normal}
+.flow{line-height:1.9}
+.kbd{
+  display:inline-block;font-family:inherit;font-size:12px;line-height:1.5;padding:1px 6px;
+  border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:var(--card);
+}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 2px}
+.chip{
+  font-size:12px;padding:2px 10px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent-strong);white-space:nowrap;
+}
+.note{
+  border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:12px 0;
+  color:var(--text-2);font-size:13.5px;
+}
+.note strong{color:var(--text)}
+details{margin:10px 0;border:1px solid var(--line);border-radius:10px;padding:0 12px}
+summary{cursor:pointer;padding:9px 0;font-size:13.5px;color:var(--text-2)}
+summary:hover{color:var(--accent-strong)}
+details[open]{padding-bottom:8px}
+details pre{margin:4px 0 6px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0}
+table{width:100%;min-width:460px;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;font-size:12px;color:var(--text-3);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+footer{padding:16px 0 0;margin-top:6px;text-align:center;font-size:12px;line-height:1.7;color:var(--text-3)}
+@media (max-width:560px){
+  body{font-size:14.5px;padding:0 12px 48px}
+  header.top{padding:16px 0 4px;gap:10px}
+  header.top svg{width:34px;height:34px}
+  h1{font-size:18px}
+  .sub{font-size:12px}
+  .back{margin-left:0;width:100%}
+  .card{padding:15px;border-radius:12px;margin:12px 0}
+  .toc-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .toc-grid a{padding:8px 10px;font-size:13px}
+  h2{font-size:15.5px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+    <rect x="3" y="3" width="90" height="90" rx="21" fill="#15181d"/>
+    <rect x="19" y="24" width="58" height="48" rx="10" fill="none" stroke="#f1efeb" stroke-width="4"/>
+    <path d="M19 36.5h58" stroke="#f1efeb" stroke-width="3" opacity=".75"/>
+    <path d="M31 47.5l8.5 7-8.5 7" fill="none" stroke="#ff9db5" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="45" y="57.5" width="16" height="4.4" rx="2.2" fill="#ff9db5"/>
+  </svg>
+  <div>
+    <h1>Linux in HTML 使用说明</h1>
+    <div class="sub">浏览器里的 Debian GNU/Linux 12 (bookworm) i386 · v86 (WebAssembly x86) · 384 MB ext4 · GPL-3.0-or-later</div>
+  </div>
+  <a class="back" id="back" href="index.html" title="返回 Linux in HTML">← 返回 Linux in HTML</a>
+</header>
+<p class="back-tip" id="backTip" role="status" hidden></p>
+
+<nav class="card toc" aria-label="页内目录">
+  <h2>目录</h2>
+  <div class="toc-grid">
+    <a href="#what">1 · 这是什么</a>
+    <a href="#start">2 · 快速开始</a>
+    <a href="#login">3 · 登录与自动开机</a>
+    <a href="#desktop">4 · 桌面与顶栏</a>
+    <a href="#apps">5 · 应用一览</a>
+    <a href="#network">6 · 网络（WISP 中继）</a>
+    <a href="#persist">7 · 磁盘持久化</a>
+    <a href="#upload">8 · 上传与安装 .deb</a>
+    <a href="#keys">9 · 快捷键</a>
+    <a href="#perf">10 · 性能参考</a>
+    <a href="#limits">11 · 已知限制</a>
+    <a href="#faq">12 · 常见问题</a>
+    <a href="#layout">13 · 项目结构</a>
+    <a href="#license">14 · 许可与署名</a>
+    <a href="#about">15 · 关于本页</a>
+  </div>
+</nav>
+
+<div class="card" id="what">
+  <h2>1 · 这是什么</h2>
+  <p>Linux in HTML 在浏览器标签页里真跑一台 <strong>Debian GNU/Linux 12 (bookworm) i386</strong> 虚拟机。v86 把 x86 CPU 用 WebAssembly JIT 模拟出来，客户机是一块完整的 <strong>384 MB ext4 磁盘镜像</strong>（不是内存 rootfs），所以有真的内核、真的 sysvinit 用户态、真的 dpkg / apt，也有真的 TCP 网络。终端里敲的每条命令都在客户机里真的执行，不是前端演出来的，也不是录屏或 UI 复原。</p>
+  <p>页面本体是静态文件，配套一个很小的 Node 服务器 <code>server.js</code>：把静态资源和磁盘分块（支持 HTTP Range，按需读取）发给浏览器，同时提供 WISP 中继，让客户机连得上互联网。</p>
+  <div class="chips">
+    <span class="chip">Debian 12 bookworm</span>
+    <span class="chip">内核 6.1.0-50-686</span>
+    <span class="chip">v86 · WASM JIT</span>
+    <span class="chip">384 MB ext4</span>
+    <span class="chip">WISP · 真实 TCP</span>
+    <span class="chip">IndexedDB 持久化</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tbody>
+        <tr><th>名称</th><td>Linux in HTML</td></tr>
+        <tr><th>客户机</th><td>Debian GNU/Linux 12 (bookworm) i386，内核 6.1.0-50-686，sysvinit + udev + apt</td></tr>
+        <tr><th>模拟器</th><td>v86（x86 → WebAssembly），画面渲染在 canvas</td></tr>
+        <tr><th>磁盘</th><td>384 MB ext4 整盘镜像，分块按需读取</td></tr>
+        <tr><th>网络</th><td>WISP over WebSocket → <code>server.js</code> → 真实 TCP</td></tr>
+        <tr><th>持久化</th><td>磁盘改动写在浏览器 IndexedDB</td></tr>
+        <tr><th>前端</th><td>原生 HTML / CSS / JS，无框架、无外部 CDN</td></tr>
+        <tr><th>许可</th><td>桌面与各应用改编自 Toy Linux（LING不道），按 GPL-3.0-or-later 分发</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="start">
+  <h2>2 · 快速开始</h2>
+  <p>需要先装好 Node.js（能跑 <code>node</code> 与 <code>npm</code> 即可）。在项目目录里执行：</p>
+  <pre><code>cd linux-in-html
+npm install      # 首次运行装依赖，整个项目只有 ws 一个依赖
+node server.js   # 默认 http://127.0.0.1:8080/</code></pre>
+  <p>然后用浏览器打开 <code>http://127.0.0.1:8080/</code>。页面会自动开机、自动登录 root，等它进桌面就能用。</p>
+  <ul>
+    <li>懒得敲命令：Windows 双击 <code>start.bat</code>，macOS / Linux 执行 <code>./start.sh</code>。两个脚本检测到没有 <code>node_modules</code> 时会自动 <code>npm install</code>，再直接跑 <code>server.js</code>。</li>
+    <li><strong>不要用 <code>file://</code> 直接打开 <code>index.html</code></strong>：浏览器不允许本地文件读取 wasm 引擎和磁盘镜像，页面会提示你改用 <code>node server.js</code>。</li>
+    <li>端口被占用：<code>node server.js --port 8081</code>，再访问 <code>http://127.0.0.1:8081/</code>。</li>
+    <li>想让局域网里的手机或同事访问：<code>node server.js --host 0.0.0.0</code>（或加 <code>--allow-any-host</code>），然后用宿主机 IP:8080 打开。默认只监听 127.0.0.1，别人连不上是正常的。</li>
+    <li>整套文件也可以放到 GitHub Pages 这类静态托管上，但那样没有本地 Node 进程，网络要另外给一个公网中继，见「网络」一节。</li>
+  </ul>
+</div>
+
+<div class="card" id="login">
+  <h2>3 · 登录与自动开机</h2>
+  <ul>
+    <li>账号是 <strong>root / root</strong>。串口控制台和画面里的 tty1 都能用这组账号登录。</li>
+    <li>通常不需要手动登录：页面启动后会自动在串口控制台以 root 登录，顺手配好 guest 网络，然后进桌面。桌面里打开的终端窗口直接就是 root shell。</li>
+    <li>首次打开会先出现三步初始设置（主机名、时区、主题），改动会写进客户机与浏览器本地；不想改就点「跳过」，之后在「设置」里还能改，也能在设置里重新调出向导。</li>
+    <li>想自己登一次也行：打开「虚拟机屏幕」应用看 tty1 的 VGA 画面，在 <code>login:</code> 后面输入 <code>root</code>，密码 <code>root</code>（密码不回显）。</li>
+    <li>开机时间：单核模拟、没有 KVM，从启动到进桌面大约 <strong>25–40 秒</strong>；首次启动要按需读取磁盘分块，会更接近上限；手机上更慢。</li>
+    <li>刷新页面等于重新引导客户机；磁盘上的改动不会丢（见「磁盘持久化」）。</li>
+  </ul>
+</div>
+
+<div class="card" id="desktop">
+  <h2>4 · 桌面与顶栏</h2>
+  <p>进系统后是一套自绘桌面：桌面壁纸、顶部顶栏、Dock，窗口由页面自己管理，不依赖客户机里的 X11。</p>
+  <ul>
+    <li><strong>顶栏</strong>：左边「活动」（应用总览），中间是当前窗口名与时钟，右边依次是内核版本、主题切换（亮 / 暗，选择存在浏览器本地，下次打开保持）、网络、扬声器、电源。</li>
+    <li><strong>Dock</strong>：每个图标对应一个应用，点一下打开或切回对应的窗口。</li>
+    <li><strong>窗口</strong>：拖动标题栏移动，按钮做最小化 / 最大化 / 关闭；窗口可以缩放，终端和文件列表会按新尺寸重排。</li>
+    <li><strong>多窗口</strong>：<span class="kbd">Alt</span>+<span class="kbd">Tab</span> 在窗口之间切换；有两个工作区，用 <span class="kbd">Ctrl</span>+<span class="kbd">Alt</span>+<span class="kbd">←</span> / <span class="kbd">→</span> 切换。</li>
+    <li><strong>桌面右键</strong>：桌面空白处右键弹出菜单，提供常用的桌面入口。</li>
+    <li><strong>手机 / 窄屏</strong>：Dock 变成底部一行横排，窗口按屏幕尺寸适配，触控目标放大到手指好点的尺寸。</li>
+  </ul>
+</div>
+
+<div class="card" id="apps">
+  <h2>5 · 应用一览</h2>
+
+  <h3>终端</h3>
+  <ul>
+    <li>直连客户机 <code>ttyS0</code>，等于坐在那台 Debian 前面。常用命令：<code>ls</code> <code>cat</code> <code>grep</code> <code>ps</code> <code>top</code> <code>df -h</code> <code>free -m</code> <code>dpkg -l</code>。</li>
+    <li>方向键上下翻命令历史、左右移动光标，<span class="kbd">Tab</span> 补全，<span class="kbd">Ctrl</span> 组合键都是客户机 bash 的标准行为。</li>
+    <li>复制粘贴：选中文本后 <span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">C</span> 复制，<span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">V</span> 或系统粘贴粘贴。</li>
+    <li>改变窗口大小后，已有输出会按新的列数重排。</li>
+    <li>手机上会唤起软键盘：点终端输入区就能打字，回车发送命令。</li>
+    <li>串口带宽有限，刷屏特别快的命令（<code>dmesg</code>、<code>yes</code>）会显得很慢，这是通道限制，不是卡死。</li>
+  </ul>
+
+  <h3>文件</h3>
+  <ul>
+    <li>列出客户机里的真实目录（等价于 <code>ls -la</code>），左侧是根目录快捷入口，可以进出目录。</li>
+    <li>点文本文件会用 <code>cat</code> 预览；权限、大小、修改时间都在列表里。</li>
+  </ul>
+
+  <h3>文本编辑器</h3>
+  <ul>
+    <li>打开客户机里的文件、编辑后写回。写入采用 base64 分块追加，写完会回读字节数并比对 sha256 校验，对不上会提示。</li>
+  </ul>
+
+  <h3>相机与图库</h3>
+  <ul>
+    <li>打开相机窗口会自动用浏览器 <code>getUserMedia</code> 申请摄像头权限并直接出预览，不需要再点按钮；浏览器询问时选「允许」。</li>
+    <li>如果之前拒绝过，窗口里会显示失败原因和「重新授权」按钮，点它可以再次发起申请。</li>
+    <li>拍照结果进图库，可删除、可保存 / 下载到本机；关闭窗口会释放摄像头。</li>
+  </ul>
+
+  <h3>计算器</h3>
+  <ul>
+    <li>随手算个数用的小计算器，不必为了算一步退回终端。</li>
+  </ul>
+
+  <h3>设置</h3>
+  <ul>
+    <li>分外观、声音、高级、性能、系统信息、网络几个分区；性能与系统信息读的是客户机实时数据，网络分区管理 WISP 中继与 guest 网络（见下一节）。</li>
+  </ul>
+
+  <h3>虚拟机屏幕</h3>
+  <ul>
+    <li>显示客户机 tty1 的 VGA 画面。串口或桌面出问题时，可以在这里手动登录、看内核输出。</li>
+  </ul>
+
+  <h3>已上传文件</h3>
+  <ul>
+    <li>列出通过「文件」注入客户机的文件，带大小、sha256 与时间，可重新注入或清理记录（明细见「上传与安装 .deb」一节）。</li>
+  </ul>
+
+  <h3>关于与许可 · 帮助</h3>
+  <ul>
+    <li>「关于与许可」给出版本与组件许可证信息，「帮助」是快速上手入口；两处都能打开本页。</li>
+  </ul>
+</div>
+
+<div class="card" id="network">
+  <h2>6 · 网络（WISP 中继）</h2>
+  <p>浏览器本身不能开 TCP 连接，所以客户机里的 socket 是通过 WISP 中继转发出去的，链路是：</p>
+  <pre class="flow"><code>guest（enp0s10）  ──virtio-net──▶  v86（浏览器 / WebAssembly）
+                                       │
+                                       │  WISP over WebSocket
+                                       ▼
+                                   server.js（本机 Node）
+                                       │  TCP
+                                       ▼
+                                     互联网</code></pre>
+  <p>对客户机里的 <code>curl</code>、<code>apt</code> 来说，这就是普通互联网：网卡是普通 virtio 网卡，v86 把它接成一条 WebSocket，用 WISP 把 TCP 流多路复用出去，<code>server.js</code> 在宿主机上真的 <code>net.connect</code> 到目标，再把数据原路送回。</p>
+  <p><code>server.js</code> 一个进程干三件事：静态文件、磁盘分块的 HTTP Range 读取、<code>/wisp/</code> 中继。它默认只监听 127.0.0.1。</p>
+
+  <h3>本机模式（默认就能用）</h3>
+  <p>用 <code>node server.js</code> 起服务时，页面会自动在串口控制台登录 root 并配好 guest 网络：网卡地址 <code>192.168.86.100/24</code>，网关和 DNS 都是 <code>192.168.86.1</code>（这是 v86 内置 NAT 的约定地址）。在「设置 → 网络」里能看到当前状态和重连按钮。</p>
+  <p>在终端里验证：</p>
+  <pre><code>ip -4 addr show dev enp0s10
+curl -sS http://example.com -o /dev/null -w '%{http_code}\n'
+# 期望输出 200
+apt-get update</code></pre>
+  <p>镜像里的 apt 源默认已经换成阿里云（<code>/etc/apt/sources.list.d/debian.sources</code>），所以 <code>apt-get update</code> 可以直接跑通。想换源就改这个文件里的域名，例如改成 <code>mirrors.tuna.tsinghua.edu.cn</code>。</p>
+  <div class="note"><strong>https 需要先装证书包。</strong>镜像里没有 CA 证书，<code>curl https://…</code> 会报证书相关的错误；先执行 <code>apt-get install -y ca-certificates</code> 再试。纯 http 和 apt 不受影响。</div>
+  <div class="note"><strong>DNS 走本机中转。</strong>客户机的 53 端口由 v86 交给浏览器，页面再把这条 DoH 请求转给 <code>server.js</code> 的 <code>/dns-query</code>，由它用 UDP 去问真实 DNS（默认 <code>223.5.5.5</code>，随后 <code>114.114.114.114</code>，可用 <code>--dns</code> 改）。这样解析不依赖浏览器能否访问公网 DoH；Pages 上没有这个路由，页面会自动回落到公网 <code>cloudflare-dns.com</code>。</div>
+  <details>
+    <summary>手动配置 guest 网络的等价命令（正常情况下用不到）</summary>
+    <pre><code>IF=$(ls /sys/class/net | grep -v '^lo' | head -n1)
+ip link set $IF up
+ip addr add 192.168.86.100/24 dev $IF
+ip route replace default via 192.168.86.1 dev $IF
+printf 'nameserver 192.168.86.1\n' > /etc/resolv.conf</code></pre>
+  </details>
+
+  <h3>GitHub Pages 等静态托管</h3>
+  <p>Pages 上只有静态文件，没有 Node 进程，虚拟机照样能开机，但客户机没有外网。这时需要给它一个公网可达的 WISP 地址：</p>
+  <ul>
+    <li>在页面「设置 → 网络」里填 <code>wss://你的中继域名/wisp/</code>，点「重连」；</li>
+    <li>或者用 URL 参数直接打开：<code>index.html?wisp=wss://你的中继域名/wisp/</code>。</li>
+    <li>中继可以自己部署：任何能跑 Node + WebSocket 的机器上跑本项目的 <code>server.js</code>，前面套一层 Nginx 反代并开 TLS，就是公网的 <code>wss://…/wisp/</code>。</li>
+  </ul>
+  <div class="note">Pages 是 https 页面，浏览器不允许它连 <code>ws://</code>，所以公网中继必须是 <code>wss://</code>。</div>
+
+  <h3>局域网访问</h3>
+  <p>手机想连电脑上跑的虚拟机：<code>node server.js --host 0.0.0.0</code>，用电脑的局域网 IP:8080 打开页面即可；中继是同源的 <code>/wisp/</code>，不用另外配。想屏蔽某些目标主机可以加 <code>--block host1,host2</code>。</p>
+</div>
+
+<div class="card" id="persist">
+  <h2>7 · 磁盘持久化</h2>
+  <ul>
+    <li>客户机是一块完整的 384 MB ext4 磁盘镜像，不是内存 rootfs。你在 guest 里装的包、改的文件、写的脚本都真在这块盘上。</li>
+    <li>磁盘写入的块存在浏览器的 <strong>IndexedDB</strong> 里：刷新页面、关掉浏览器再打开，改动还在，可以接着用。</li>
+    <li>每个浏览器一份，互不相通。换浏览器、换设备、开无痕窗口，看到的都是另一份磁盘（或出厂状态）。</li>
+    <li>想回到干净状态：设置里提供「清除磁盘改动」，清掉之后下次启动就是出厂镜像。</li>
+    <li>上传的文件、桌面上 .deb 安装出来的图标也存在浏览器本地（IndexedDB / localStorage），换浏览器同样看不到。</li>
+    <li>清除浏览器站点数据会把上面这些都清掉（磁盘改动、设置、上传记录）。想长期保留，就别清站点数据。</li>
+  </ul>
+</div>
+
+<div class="card" id="upload">
+  <h2>8 · 上传与安装 .deb</h2>
+  <ul>
+    <li>「文件」面板可以把本机文件通过串口分块注入客户机。串口是慢通道，几十 KB 级别的文件比较合适，别拿它传几十 MB 的东西。</li>
+    <li>上传 <code>.deb</code> 会走客户机里真实的 <code>dpkg -i</code> 安装，然后解析包里的 <code>.desktop</code>，在桌面生成图标，点图标就在客户机里启动对应程序。</li>
+    <li>装好的包留在客户机磁盘里，图标记录存在浏览器本地，刷新或重开浏览器后还在。</li>
+    <li>只是想在 guest 里放个小脚本、小配置文件时，上传通常比在终端里手打快。</li>
+  </ul>
+</div>
+
+<div class="card" id="keys">
+  <h2>9 · 快捷键</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>操作</th><th>键 / 方式</th></tr></thead>
+      <tbody>
+        <tr><td>窗口间切换</td><td><span class="kbd">Alt</span> + <span class="kbd">Tab</span></td></tr>
+        <tr><td>切换工作区</td><td><span class="kbd">Ctrl</span> + <span class="kbd">Alt</span> + <span class="kbd">←</span> / <span class="kbd">→</span></td></tr>
+        <tr><td>终端复制</td><td><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">C</span></td></tr>
+        <tr><td>终端粘贴</td><td><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">V</span>，或系统粘贴</td></tr>
+        <tr><td>命令补全</td><td><span class="kbd">Tab</span></td></tr>
+        <tr><td>翻命令历史</td><td><span class="kbd">↑</span> / <span class="kbd">↓</span></td></tr>
+        <tr><td>中断当前命令</td><td><span class="kbd">Ctrl</span> + <span class="kbd">C</span></td></tr>
+        <tr><td>结束输入 / 登出</td><td><span class="kbd">Ctrl</span> + <span class="kbd">D</span></td></tr>
+        <tr><td>清屏</td><td><span class="kbd">Ctrl</span> + <span class="kbd">L</span></td></tr>
+        <tr><td>删掉整行</td><td><span class="kbd">Ctrl</span> + <span class="kbd">U</span></td></tr>
+        <tr><td>行首 / 行尾</td><td><span class="kbd">Ctrl</span> + <span class="kbd">A</span> / <span class="kbd">Ctrl</span> + <span class="kbd">E</span></td></tr>
+        <tr><td>删前一个词</td><td><span class="kbd">Ctrl</span> + <span class="kbd">W</span></td></tr>
+        <tr><td>桌面菜单</td><td>桌面空白处右键</td></tr>
+        <tr><td>手机输入</td><td>点终端输入区唤起软键盘，回车发送</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Ctrl 开头的编辑键都是客户机 bash（readline）的标准行为，不是页面自己实现的一套快捷键。</p>
+</div>
+
+<div class="card" id="perf">
+  <h2>10 · 性能参考</h2>
+  <ul>
+    <li>单核模拟、没有 KVM 硬件加速，性能大致相当于 2000 年代初的机器。进桌面 25–40 秒，<code>apt install</code> 要有耐心。</li>
+    <li>首次启动要按需读取磁盘分块（384 MB 分成多块拉取），比之后慢；之后有浏览器缓存会好一些。</li>
+    <li>手机 CPU 弱、内存小，会更慢，也更容易在 apt 这类重活上卡住。</li>
+    <li>图形桌面不是这台机器的主场：可以在 guest 里自己 <code>apt install xorg</code>，跑得动但不会快。</li>
+    <li>串口是终端通道，带宽有限；<code>dmesg</code>、<code>yes</code> 这类刷屏命令看着卡是正常的。</li>
+  </ul>
+</div>
+
+<div class="card" id="limits">
+  <h2>11 · 已知限制</h2>
+  <ul>
+    <li>没有 GPU 加速、没有声卡直通。</li>
+    <li>guest 网卡在 v86 里叫 <code>enp0s10</code>；网上教程里的 <code>eth0</code> / <code>ens33</code> 配置别直接照抄。</li>
+    <li>镜像不带 CA 证书，https 需要先 <code>apt-get install -y ca-certificates</code>。</li>
+    <li>通过串口单次注入的文件不要太大，几十 KB 级别最稳。</li>
+    <li>只有一块 384 MB 磁盘，装大包之前先 <code>df -h</code> 看看空间。</li>
+    <li>中继和磁盘分块都要经过浏览器与本机 / 服务器，网络差时首次加载和 apt 都会慢。</li>
+    <li>每个浏览器的磁盘互相独立，A 浏览器里装的东西不会在 B 浏览器里出现。</li>
+  </ul>
+</div>
+
+<div class="card" id="faq">
+  <h2>12 · 常见问题</h2>
+
+  <h3>双击 index.html 打不开，提示要用 server.js</h3>
+  <p>不要用 <code>file://</code> 打开。按「快速开始」跑 <code>npm install</code> 与 <code>node server.js</code>，再访问 <code>http://127.0.0.1:8080/</code>。</p>
+
+  <h3>一直停在引导画面</h3>
+  <p>首次启动要读磁盘分块，25–40 秒是正常范围，手机更久。先看引导日志是否还在滚动；如果一两分钟完全没动静，刷新页面或重启页面里的虚拟机；仍然不行就看终端 / 串口输出的最后一行报错。</p>
+
+  <h3>客户机没有网，curl 不是 200</h3>
+  <p>先在「设置 → 网络」看 guest 网络状态，点重连或重新配置；本机模式确认 <code>server.js</code> 还在跑。Pages 模式确认填的是公网 <code>wss://…/wisp/</code>，并且那个中继服务真的在。</p>
+  <p>如果报的是 <code>Could not resolve host</code> 而不是连接超时，问题在 DNS：确认 <code>server.js</code> 还在跑（它同时负责 <code>/dns-query</code>），再确认本机能解析域名；Pages 模式下没有这个路由，会回落到公网 DoH，浏览器访问不到 <code>cloudflare-dns.com</code> 时就只能靠 IP 直连。</p>
+
+  <h3>apt-get update 失败</h3>
+  <p>先确认网络验证通过（上面那个 curl 返回 200）。apt 源默认指向阿里云，国内一般没问题；换源就改 <code>/etc/apt/sources.list.d/debian.sources</code>。磁盘满了会报空间不足，用 <code>df -h</code> 看一眼。</p>
+
+  <h3>curl https:// 报证书错误</h3>
+  <p>镜像没带 CA 证书，先 <code>apt-get install -y ca-certificates</code>。</p>
+
+  <h3>相机打不开 / 黑屏</h3>
+  <p>浏览器弹权限询问时选允许；之前点过拒绝，就在相机窗口里点「重新授权」。部分浏览器要求页面在前台，或者要求 https 页面才给摄像头权限。</p>
+
+  <h3>刷新以后装的东西还在吗</h3>
+  <p>在。磁盘改动存在 IndexedDB 里，刷新只是重新引导；清除站点数据或者换浏览器才会丢。</p>
+
+  <h3>终端敲字没反应</h3>
+  <p>先点一下终端窗口拿到焦点；手机上点输入区唤起软键盘。确认页面已经进桌面，而不是还在引导。</p>
+
+  <h3>8080 端口被占用</h3>
+  <p>用 <code>node server.js --port 8081</code>，然后访问 <code>http://127.0.0.1:8081/</code>。</p>
+</div>
+
+<div class="card" id="layout">
+  <h2>13 · 项目结构与技术栈</h2>
+  <p>全部是原生 HTML / CSS / JS，没有前端框架，也没有外部 CDN、外部字体、外链图片：页面本体完全离线可用。</p>
+  <pre><code>index.html                桌面入口（窗口系统挂在它上面）
+assets/css/desktop.css    桌面、顶栏、Dock、窗口样式
+assets/js/term.js         终端渲染器（ttyS0）
+assets/js/wm.js           窗口管理器、桌面、顶栏、工作区
+assets/js/apps.js         终端 / 文件 / 编辑器 / 相机 / 图库 / 计算器 / 设置等应用
+assets/js/extras.js       附加应用与工具（虚拟机屏幕、关于、帮助等）
+assets/js/boot.js         引导流程、串口自动登录、guest 网络配置
+assets/js/anim.js         界面动效
+assets/js/bridge.js       与 v86 / WISP / IndexedDB 之间的桥接
+server.js                 静态服务 + Range 分块读取 + WISP 中继
+lib/                      v86 引擎、SeaBIOS / SeaVGABIOS
+images/                   内核 vmlinuz、initrd、384 MB 磁盘分块
+licenses/                 第三方许可证全文（GPL-3.0 等）</code></pre>
+  <p>关键实现：</p>
+  <ul>
+    <li><strong>模拟器 v86</strong>：x86 → WebAssembly JIT，画面渲染在 canvas；磁盘按 HTTP Range 分块按需拉取。</li>
+    <li><strong>网络</strong>：WISP over WebSocket，由 <code>server.js</code> 转成真实 TCP。</li>
+    <li><strong>持久化</strong>：客户机磁盘的增量写在浏览器 IndexedDB。</li>
+    <li><strong>终端</strong>：直连串口 <code>ttyS0</code>，渲染与键盘事件都在宿主侧处理。</li>
+  </ul>
+</div>
+
+<div class="card" id="license">
+  <h2>14 · 许可与署名</h2>
+  <div class="note"><strong>本项目的桌面 UI、窗口管理器、终端渲染器以及各个应用改编自 Toy Linux（作者 LING不道，GPL-3.0-or-later）。</strong>因此这部分及其组合按 <strong>GPL-3.0-or-later</strong> 分发，并保留原作者署名。许可证全文在 <code>licenses/GPL-3.0.md</code>。</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>组件</th><th>许可证</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>桌面 UI、窗口管理器、终端渲染器、各应用（改编自 Toy Linux / LING不道）</td>
+          <td>GPL-3.0-or-later</td>
+          <td>与本项目其余部分一起按 GPL-3.0-or-later 分发，保留原作者署名与上游来源说明；全文见 <code>licenses/GPL-3.0.md</code></td>
+        </tr>
+        <tr>
+          <td>v86</td>
+          <td>BSD-2-Clause</td>
+          <td>x86 模拟器与 WASM JIT，原样放在 <code>lib/</code> 下</td>
+        </tr>
+        <tr>
+          <td>SeaBIOS / SeaVGABIOS</td>
+          <td>LGPL-3.0</td>
+          <td>虚拟机 BIOS 与 VGA BIOS，作为可替换的独立文件分发</td>
+        </tr>
+        <tr>
+          <td>Debian 内核与 rootfs 二进制</td>
+          <td>GPL-2.0 等（各包自身许可）</td>
+          <td>客户机内核与用户态，以独立二进制分发在 <code>images/</code> 下，保持各自许可证不变</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>第三方组件各自保持自己的许可证，作为独立文件分发，不因与本项目一起打包而改变许可；根文件系统里保留 <code>/usr/share/doc/*/copyright</code>。</p>
+  <p>仓库：<a href="https://github.com/wdhdc/linux-in-html" target="_blank" rel="noopener noreferrer">https://github.com/wdhdc/linux-in-html</a>。分发或修改本项目时，请保留 GPL-3.0-or-later 的许可证全文与原作者署名。</p>
+</div>
+
+<div class="card" id="about">
+  <h2>15 · 关于本页</h2>
+  <p>本页是独立的静态页面 <code>usage.html</code>，不启动虚拟机、不占 CPU，可以单独收藏或分享。本机模式下地址一般是 <code>http://127.0.0.1:8080/usage.html</code>，部署到 Pages 时就是站点下的 <code>usage.html</code>。</p>
+  <p>顶部的「← 返回 Linux in HTML」按钮：浏览器里有上一页时直接 <code>history.back()</code> 回去（原来的虚拟机标签还在，不会重新开机）；如果是直接打开本页、没有上一页，就跳转到 <code>index.html</code>（这种情况下虚拟机会重新启动）。页面会自己判断，不需要手动改地址。</p>
+</div>
+
+<footer>
+  Linux in HTML · 浏览器里的 Debian GNU/Linux 12 (bookworm) i386<br>
+  桌面与各应用改编自 Toy Linux（LING不道），GPL-3.0-or-later · 第三方组件遵循各自许可证
+</footer>
+
+</div>
+<script>
+(function () {
+  var back = document.getElementById('back');
+  var tip = document.getElementById('backTip');
+
+  function say(message) {
+    if (!tip) return;
+    tip.textContent = message;
+    tip.hidden = false;
+  }
+
+  if (!back) return;
+
+  back.addEventListener('click', function (event) {
+    // 允许中键 / Ctrl+点击等浏览器原生「新标签打开」行为
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+
+    if (history.length > 1) {
+      say('已返回上一页，Linux in HTML 原来的标签页还在。如果上一页不是它，用浏览器前进键回来即可。');
+      history.back();
+      return;
+    }
+
+    say('本页是直接打开的，没有上一页；正在跳回 Linux in HTML，虚拟机会重新启动。');
+    window.setTimeout(function () {
+      window.location.href = 'index.html';
+    }, 700);
+  });
+})();
+</script>
+</body>
+</html>

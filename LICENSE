@@ -1,21 +1,17 @@
-MIT License
+# 许可证 · License
 
-Copyright (c) 2026 linux-in-html contributors
+本项目作为**组合作品**按 **GNU General Public License 第 3 版或更高版本（GPL-3.0-or-later）** 分发。
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+原因：桌面 UI、窗口管理器、终端渲染器、桥接层与各应用改编自 Toy Linux（作者 LING不道 / 凌徐鲲，GPL-3.0-or-later），派生关系见 `NOTICE.md`。
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+- GPL-3.0 全文：[`licenses/GPL-3.0.md`](licenses/GPL-3.0.md)
+- 本项目原创部分（`server.js`、`index.html`、`usage.html`、启动脚本等）另外可按 MIT 使用，全文见 [`licenses/MIT.md`](licenses/MIT.md)
+- 第三方组件（v86、SeaBIOS / SeaVGABIOS、Debian 内核与 rootfs）保持各自许可证，见 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+---
+
+This repository is distributed as a combined work under the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**, because its desktop UI, window manager, terminal renderer, bridge layer and apps are adapted from Toy Linux (LING不道 / 凌徐鲲, GPL-3.0-or-later) — see `NOTICE.md`.
+
+- Full GPL-3.0 text: [`licenses/GPL-3.0.md`](licenses/GPL-3.0.md)
+- Original parts of this project (`server.js`, `index.html`, `usage.html`, start scripts …) are additionally available under MIT: [`licenses/MIT.md`](licenses/MIT.md)
+- Third-party components keep their own licenses: [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)
