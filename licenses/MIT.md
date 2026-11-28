@@ -2,6 +2,8 @@
 
 适用于 `server.js`、`index.html`、`usage.html`、`start.bat`、`start.sh`、`package.json`。派生自 Toy Linux 的文件（`term.js`、`wm.js`、`anim.js`、`bridge.js`、`apps.js`、`extras.js`、`boot.js`、`desktop.css`）不适用本许可，见 `NOTICE.md`。
 
+`server.js` 是独立进程，与前端只通过网络协议通信，因此可以单独按本许可使用、修改、再分发；把本仓库整体分发时按组合作品遵守 `licenses/GPL-3.0.md`。
+
 Copyright (c) 2026 Linux in HTML contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
